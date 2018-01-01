@@ -97,7 +97,7 @@ class ErrorRecorder(object):
         if source:
             msg += '%s: ' % source.fullname
         msg += '%s' % reason
-        if exc_info is not None and self.ui.options.debug >= 1:
+        if exc_info is not None and self.ui.options['debug'] >= 1:
             stackframes = traceback.extract_tb(exc_info[2])
             filename, lineno, modulename, code = stackframes[-1]
             msg += ' [File "%s", line %d, in %s]' % (

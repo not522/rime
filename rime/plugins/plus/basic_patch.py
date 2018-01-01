@@ -40,39 +40,6 @@ from rime.core import taskgraph
 from rime.plugins.plus import rime_plus_version
 from rime.util import files
 
-libdir = None
-
-
-def parseVersion(v):
-    return [int(d) for d in v.split('.')]
-
-
-class Project(targets.registry.Project):
-    def __init__(self, *args, **kwargs):
-        super(Project, self).__init__(*args, **kwargs)
-
-    def PreLoad(self, ui):
-        super(Project, self).PreLoad(ui)
-        self.library_dir = None
-        self.project_defined = False
-
-        def _project(library_dir=None,
-                     required_rime_plus_version=rime_plus_version):
-            if self.project_defined:
-                # ui.errors.Error(self, 'project() is already defined.')
-                raise RuntimeError('project() is already defined.')
-            if (parseVersion(rime_plus_version) <
-                    parseVersion(required_rime_plus_version)):
-                # ui.errors.Error(self, 'installed rime-plus is too old.')
-                raise RuntimeError('installed rime-plus is too old.')
-            global libdir
-            libdir = os.path.join(
-                self.base_dir,
-                library_dir)
-            self.library_dir = libdir
-            self.project_defined = True
-        self.exports['project'] = _project
-
 
 class Testset(targets.registry.Testset):
     def __init__(self, *args, **kwargs):
@@ -409,7 +376,6 @@ class Testset(targets.registry.Testset):
         yield True
 
 
-targets.registry.Override('Project', Project)
 targets.registry.Override('Testset', Testset)
 
 
