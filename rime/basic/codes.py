@@ -245,6 +245,8 @@ class ScriptCode(CodeBase):
         run_args = list(self.run_args)
         try:
             run_args[0] = self._ReadAndParseShebangLine()
+            if run_args[0] is not None:
+                run_args = run_args[0].split(' ') + run_args[1:]
         except IOError:
             pass
         self.run_args = tuple(run_args)
@@ -253,15 +255,30 @@ class ScriptCode(CodeBase):
     def Compile(self, *args, **kwargs):
         """Fail if the script is missing a shebang line."""
         try:
-            interpreter = self._ReadAndParseShebangLine()
+            interpreter = self.run_args[0]
         except IOError:
             yield codes.RunResult('File not found', None)
         if not interpreter:
             yield codes.RunResult('Script missing a shebang line', None)
         if not os.path.exists(interpreter):
-            yield codes.RunResult('Interpreter not found: %s' % interpreter,
-                                  None)
-        yield (yield super(ScriptCode, self).Compile(*args, **kwargs))
+            yield codes.RunResult('Interpreter not found: %s' %
+                                  interpreter, None)
+
+        # when using env, try to output more detailed error message
+        if interpreter == '/bin/env' or interpreter == '/usr/bin/env':
+            try:
+                # if the command does not exist,
+                # "which" return 1 as the status code
+                interpreter = subprocess.check_output(
+                    ['which', self.run_args[1]]).strip()
+            except subprocess.CalledProcessError:
+                yield codes.RunResult(
+                    'Interpreter not installed: %s' % self.run_args[1], None)
+            if not os.path.exists(interpreter):
+                yield codes.RunResult('Interpreter not found: %s' %
+                                      interpreter, None)
+
+        yield (yield CodeBase.Compile(self, *args, **kwargs))
 
     def _ReadAndParseShebangLine(self):
         with open(os.path.join(self.src_dir, self.src_name)) as f:
@@ -269,6 +286,60 @@ class ScriptCode(CodeBase):
         if not shebang_line.startswith('#!'):
             return None
         return shebang_line[2:].strip()
+
+
+class JavaScriptCode(CodeBase):
+    QUIET_COMPILE = True
+    PREFIX = 'js'
+    EXTENSIONS = ['js']
+
+    def __init__(self, src_name, src_dir, out_dir, run_flags=[]):
+        super(JavaScriptCode, self).__init__(
+            src_name=src_name, src_dir=src_dir, out_dir=out_dir,
+            compile_args=[],
+            run_args=['node', '--',
+                      os.path.join(src_dir, src_name)] + run_flags)
+
+    @taskgraph.task_method
+    def Compile(self, *args, **kwargs):
+        """Fail if the script is missing a shebang line."""
+        try:
+            open(os.path.join(self.src_dir, self.src_name))
+        except IOError:
+            yield codes.RunResult('File not found', None)
+        yield (yield super(JavaScriptCode, self).Compile(*args, **kwargs))
+
+
+class HaskellCode(CodeBase):
+    PREFIX = 'hs'
+    EXTENSIONS = ['hs']
+
+    def __init__(self, src_name, src_dir, out_dir, flags=[]):
+        exe_name = os.path.splitext(src_name)[0] + consts.EXE_EXT
+        exe_path = os.path.join(out_dir, exe_name)
+        super(HaskellCode, self).__init__(
+            src_name=src_name, src_dir=src_dir, out_dir=out_dir,
+            compile_args=(['stack', 'ghc', '--', '-O',
+                           '-o', exe_path, '-outputdir', out_dir, src_name] +
+                          list(flags)),
+            run_args=[exe_path])
+
+
+class CsCode(CodeBase):
+    PREFIX = 'cs'
+    EXTENSIONS = ['cs']
+
+    def __init__(self, src_name, src_dir, out_dir, flags=[]):
+        exe_name = os.path.splitext(src_name)[0] + consts.EXE_EXT
+        exe_path = os.path.join(out_dir, exe_name)
+        super(CsCode, self).__init__(
+            src_name=src_name,
+            src_dir=src_dir,
+            out_dir=out_dir,
+            compile_args=(['mcs',
+                           src_name,
+                           '-out:' + exe_path] + list(flags)),
+            run_args=['mono', exe_path])
 
 
 class InternalDiffCode(CodeBase):
@@ -322,3 +393,6 @@ codes.registry.Add(KotlinCode)
 codes.registry.Add(JavaCode)
 codes.registry.Add(RustCode)
 codes.registry.Add(ScriptCode)
+codes.registry.Add(CsCode)
+codes.registry.Add(JavaScriptCode)
+codes.registry.Add(HaskellCode)
