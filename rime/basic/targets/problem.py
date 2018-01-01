@@ -188,6 +188,9 @@ class ProblemComponentMixin(object):
     def GetLastModified(self):
         """Get timestamp of this target."""
         stamp = files.GetLastModifiedUnder(self.src_dir)
+        if self.project.library_dir is not None:
+            stamp = max(stamp, files.GetLastModifiedUnder(
+                self.project.library_dir))
         return stamp
 
     def SetCacheStamp(self, ui):
