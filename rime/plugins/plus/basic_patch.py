@@ -356,28 +356,6 @@ class Testset(targets.registry.Testset):
 targets.registry.Override('Testset', Testset)
 
 
-# -O2
-class CCode(codes.registry.CCode):
-    def __init__(self, src_name, src_dir, out_dir, flags=['-lm']):
-        super(CCode, self).__init__(
-            src_name, src_dir, out_dir, ['-O2'] + flags)
-
-
-class CXXCode(codes.registry.CXXCode):
-    EXTENSIONS = ['cc', 'cxx', 'cpp']
-
-    def __init__(self, src_name, src_dir, out_dir, flags=[]):
-        super(CXXCode, self).__init__(
-            src_name, src_dir, out_dir, ['-std=c++11', '-O2'] + flags)
-
-
-# -C opt-level=2
-class RustCode(codes.registry.RustCode):
-    def __init__(self, src_name, src_dir, out_dir, flags=[]):
-        super(RustCode, self).__init__(
-            src_name, src_dir, out_dir, ['-C', 'opt-level=2'] + flags)
-
-
 # shebang support
 # codes.registry.ScriptCode is not supported
 class ScriptCode(basic_codes.ScriptCode):
@@ -423,9 +401,6 @@ class ScriptCode(basic_codes.ScriptCode):
         yield (yield basic_codes.CodeBase.Compile(self, *args, **kwargs))
 
 
-codes.registry.Override('CCode', CCode)
-codes.registry.Override('CXXCode', CXXCode)
-codes.registry.Override('RustCode', RustCode)
 codes.registry.Override('ScriptCode', ScriptCode)
 
 
