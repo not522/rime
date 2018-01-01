@@ -356,21 +356,6 @@ class Testset(targets.registry.Testset):
 targets.registry.Override('Testset', Testset)
 
 
-# code compile
-
-def GetLastModified(self):
-    """Get timestamp of this target."""
-    stamp = files.GetLastModifiedUnder(self.src_dir)
-    if self.project.library_dir is not None:
-        stamp = max(stamp, files.GetLastModifiedUnder(
-            self.project.library_dir))
-    return stamp
-
-
-rime.basic.targets.problem.ProblemComponentMixin.GetLastModified = \
-    GetLastModified
-
-
 # -O2
 class CCode(codes.registry.CCode):
     def __init__(self, src_name, src_dir, out_dir, flags=['-lm']):
