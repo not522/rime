@@ -28,7 +28,6 @@ import sys
 import traceback
 
 from rime.core import commands as commands_mod
-from rime.core import hooks
 from rime.core import targets
 from rime.core import taskgraph
 from rime.core import ui as ui_mod
@@ -140,11 +139,9 @@ def InternalMain(argv):
     # Run the task.
     task = None
     try:
-        hooks.pre_command(ui)
         task = cmd.Run(project, tuple(args), ui)
         if task:
             graph.Run(task)
-        hooks.post_command(ui)
     except KeyboardInterrupt:
         if ui.options.debug >= 1:
             traceback.print_exc()
