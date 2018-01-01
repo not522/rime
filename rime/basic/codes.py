@@ -20,6 +20,8 @@ class CodeBase(codes.Code):
         self.log_name = os.path.splitext(src_name)[0] + consts.LOG_EXT
         self.compile_args = tuple(compile_args)
         self.run_args = tuple(run_args)
+        self.dependency = []
+        self.variant = None
 
     @taskgraph.task_method
     def Compile(self):
@@ -64,11 +66,30 @@ class CodeBase(codes.Code):
 
     @taskgraph.task_method
     def _ExecForCompile(self, args):
+        for f in files.ListDir(self.src_dir):
+            srcpath = os.path.join(self.src_dir, f)
+            dstpath = os.path.join(self.out_dir, f)
+            if os.path.isdir(srcpath):
+                files.CopyTree(srcpath, dstpath)
+            else:
+                files.CopyFile(srcpath, dstpath)
+
+        if len(self.dependency) > 0:
+            global libdir
+            if libdir is None:
+                raise IOError('library_dir is not defined.')
+            else:
+                for f in self.dependency:
+                    if not os.path.exists(os.path.join(libdir, f)):
+                        raise IOError('%s is not found in %s.' % (f, libdir))
+                    files.CopyFile(
+                        os.path.join(libdir, f),
+                        self.out_dir)
+
         with open(os.path.join(self.out_dir, self.log_name), 'w') as outfile:
             yield (yield self._ExecInternal(
-                args=args, cwd=self.src_dir,
-                stdin=files.OpenNull(), stdout=outfile,
-                stderr=subprocess.STDOUT))
+                args=args, cwd=self.out_dir, stdin=files.OpenNull(),
+                stdout=outfile, stderr=subprocess.STDOUT))
 
     @taskgraph.task_method
     def _ExecForRun(self, args, cwd, input, output, timeout, precise,
@@ -97,7 +118,7 @@ class CodeBase(codes.Code):
             self._ResetIO(stdin, stdout, stderr)
             task = taskgraph.ExternalProcessTask(
                 args, cwd=cwd, stdin=stdin, stdout=stdout, stderr=stderr,
-                timeout=timeout, exclusive=True)
+                timeout=timeout, exclusive=precise)
             proc = yield task
             code = proc.returncode
         if code == 0:
