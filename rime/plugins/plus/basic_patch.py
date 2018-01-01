@@ -24,7 +24,6 @@
 import fnmatch
 import json
 import os.path
-import signal
 import subprocess
 
 from rime.basic import codes as basic_codes
@@ -37,7 +36,6 @@ from rime.basic import test
 from rime.core import codes
 from rime.core import targets
 from rime.core import taskgraph
-from rime.plugins.plus import rime_plus_version
 from rime.util import files
 
 
@@ -379,65 +377,7 @@ class Testset(targets.registry.Testset):
 targets.registry.Override('Testset', Testset)
 
 
-# fast_test
-@taskgraph.task_method
-def _ExecInternal(self, args, cwd, stdin, stdout, stderr,
-                  timeout=None, precise=False):
-    task = taskgraph.ExternalProcessTask(
-        args, cwd=cwd, stdin=stdin, stdout=stdout, stderr=stderr,
-        timeout=timeout, exclusive=precise)
-    proc = yield task
-    code = proc.returncode
-    # Retry if TLE.
-    if not precise and code == -(signal.SIGXCPU):
-        self._ResetIO(stdin, stdout, stderr)
-        task = taskgraph.ExternalProcessTask(
-            args, cwd=cwd, stdin=stdin, stdout=stdout, stderr=stderr,
-            timeout=timeout, exclusive=precise)
-        proc = yield task
-        code = proc.returncode
-    if code == 0:
-        status = codes.RunResult.OK
-    elif code == -(signal.SIGXCPU):
-        status = codes.RunResult.TLE
-    elif code < 0:
-        status = codes.RunResult.RE
-    else:
-        status = codes.RunResult.NG
-    yield codes.RunResult(status, task.time)
-
-
-basic_codes.CodeBase._ExecInternal = _ExecInternal
-
-
 # code compile
-
-@taskgraph.task_method
-def _ExecForCompile(self, args):
-    for f in files.ListDir(self.src_dir):
-        srcpath = os.path.join(self.src_dir, f)
-        dstpath = os.path.join(self.out_dir, f)
-        if os.path.isdir(srcpath):
-            files.CopyTree(srcpath, dstpath)
-        else:
-            files.CopyFile(srcpath, dstpath)
-
-    if len(self.dependency) > 0:
-        if libdir is None:
-            raise IOError('library_dir is not defined.')
-        else:
-            for f in self.dependency:
-                if not os.path.exists(os.path.join(libdir, f)):
-                    raise IOError('%s is not found in %s.' % (f, libdir))
-                files.CopyFile(
-                    os.path.join(libdir, f),
-                    self.out_dir)
-
-    with open(os.path.join(self.out_dir, self.log_name), 'w') as outfile:
-        yield (yield self._ExecInternal(
-            args=args, cwd=self.out_dir,
-            stdin=files.OpenNull(), stdout=outfile, stderr=subprocess.STDOUT))
-
 
 def GetLastModified(self):
     """Get timestamp of this target."""
@@ -448,9 +388,6 @@ def GetLastModified(self):
     return stamp
 
 
-basic_codes.CodeBase._ExecForCompile = _ExecForCompile
-basic_codes.CodeBase.dependency = []
-basic_codes.CodeBase.variant = None
 rime.basic.targets.problem.ProblemComponentMixin.GetLastModified = \
     GetLastModified
 
