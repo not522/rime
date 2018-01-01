@@ -118,7 +118,7 @@ class Testset(targets.registry.Testset):
                 solution.out_dir,
                 os.path.splitext(os.path.basename(testcase.infile))[0] + ext)
             for ext in (consts.OUT_EXT, consts.JUDGE_EXT)]
-        precise = (ui.options.precise or ui.options.parallelism <= 1)
+        precise = (ui.options['precise'] or ui.options['parallelism'] <= 1)
         # reactive
         if self.reactives:
             if len(self.reactives) > 1:
