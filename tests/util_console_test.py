@@ -26,9 +26,9 @@ import unittest
 
 from six import StringIO
 
+from rime.core import targets
 from rime.util import console
 from rime.util import files
-from rime.util import struct
 
 if sys.version_info[0] == 2:
     import mox
@@ -44,28 +44,24 @@ class ConsoleTest(unittest.TestCase):
         self.mox.UnsetStubs()
 
     def CreateStringIOConsole(self):
-        return console.ConsoleBase(out=StringIO(),
-                                   caps=struct.Struct(color=True,
-                                                      overwrite=True))
+        return console.ConsoleBase(
+            out=StringIO(), caps={'color': True, 'overwrite': True})
 
     def testConsoleBase(self):
-        c = console.ConsoleBase(out=None,
-                                caps=struct.Struct(color=False,
-                                                   overwrite=False))
+        c = console.ConsoleBase(
+            out=None, caps={'color': False, 'overwrite': False})
         self.assertEqual(c.BOLD, '')
         self.assertEqual(c.UP, '')
-        c = console.ConsoleBase(out=None,
-                                caps=struct.Struct(color=True,
-                                                   overwrite=False))
+        c = console.ConsoleBase(
+            out=None, caps={'color': True, 'overwrite': False})
         self.assertNotEqual(c.BOLD, '')
         self.assertEqual(c.UP, '')
-        c = console.ConsoleBase(out=None,
-                                caps=struct.Struct(color=False,
-                                                   overwrite=True))
+        c = console.ConsoleBase(
+            out=None, caps={'color': False, 'overwrite': True})
         self.assertEqual(c.BOLD, '')
         self.assertNotEqual(c.UP, '')
-        c = console.ConsoleBase(out=None,
-                                caps=struct.Struct(color=True, overwrite=True))
+        c = console.ConsoleBase(
+            out=None, caps={'color': True, 'overwrite': True})
         self.assertNotEqual(c.BOLD, '')
         self.assertNotEqual(c.UP, '')
 
@@ -113,8 +109,8 @@ class ConsoleTest(unittest.TestCase):
         c.Print('\x1b[32m', '[   HOGE   ]', '\x1b[0m', ' ', 'name', ':', ' ',
                 'hoge', 'piyo', foo='bar')
         self.mox.ReplayAll()
-        c.PrintAction('HOGE', struct.Struct(fullname='name'),
-                      'hoge', 'piyo', foo='bar')
+        target = targets.Project('name', '/', None)
+        c.PrintAction('HOGE', target, 'hoge', 'piyo', foo='bar')
         self.mox.VerifyAll()
 
     def testPrintActionWithObjNoArg(self):
@@ -122,7 +118,8 @@ class ConsoleTest(unittest.TestCase):
         self.mox.StubOutWithMock(c, 'Print')
         c.Print('\x1b[32m', '[   HOGE   ]', '\x1b[0m', ' ', 'name', foo='bar')
         self.mox.ReplayAll()
-        c.PrintAction('HOGE', struct.Struct(fullname='name'), foo='bar')
+        target = targets.Project('name', '/', None)
+        c.PrintAction('HOGE', target, foo='bar')
         self.mox.VerifyAll()
 
     def testPrintError(self):

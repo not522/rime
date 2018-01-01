@@ -419,7 +419,7 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
                             os.path.basename(testcase.infile),
                             notable_testcase=testcase)
             ui.errors.Error(solution, result.detail)
-            if ui.options.keep_going:
+            if ui.options['keep_going']:
                 yield False
             else:
                 raise taskgraph.Bailout([False])
@@ -431,7 +431,7 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
                                 testcase.infile),
                             notable_testcase=testcase)
             ui.errors.Error(solution, result.detail)
-            if ui.options.keep_going:
+            if ui.options['keep_going']:
                 yield False
             else:
                 raise taskgraph.Bailout([False])
@@ -478,7 +478,7 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
                             os.path.basename(testcase.infile),
                             notable_testcase=testcase)
             ui.errors.Error(solution, result.detail)
-            if ui.options.keep_going:
+            if ui.options['keep_going']:
                 yield False
             else:
                 raise taskgraph.Bailout([False])
@@ -500,7 +500,7 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
                                     (result.detail, judgefile))
                 else:
                     ui.errors.Error(solution, result.detail)
-            if ui.options.keep_going:
+            if ui.options['keep_going']:
                 yield False
             else:
                 raise taskgraph.Bailout([False])
@@ -533,7 +533,7 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
                 solution.out_dir,
                 os.path.splitext(os.path.basename(testcase.infile))[0] + ext)
             for ext in (consts.OUT_EXT, consts.JUDGE_EXT)]
-        precise = (ui.options.precise or ui.options.parallelism <= 1)
+        precise = (ui.options['precise'] or ui.options['parallelism'] <= 1)
         res = yield solution.Run(
             args=(), cwd=solution.out_dir,
             input=testcase.infile,

@@ -22,7 +22,6 @@
 #
 
 from rime.util import class_registry
-from rime.util import struct
 
 
 class ParseError(Exception):
@@ -186,7 +185,7 @@ def Parse(argv, commands):
       A tuple of (cmd_name, extra_args, options) where:
         cmd: Command object of the main command specified by the command line.
         extra_args: A list of extra arguments given to the command.
-        options: Struct containing option arguments.
+        options: Dictionary containing option arguments.
 
     Raises:
       ParseError: When failed to parse arguments.
@@ -263,7 +262,7 @@ def Parse(argv, commands):
         cmd = commands[None]
         options['help'] = True
 
-    return (cmd, extra_args, struct.Struct(options))
+    return (cmd, extra_args, options)
 
 
 class Help(CommandBase):
