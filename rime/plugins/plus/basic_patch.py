@@ -407,15 +407,7 @@ def _ExecInternal(self, args, cwd, stdin, stdout, stderr,
     yield codes.RunResult(status, task.time)
 
 
-def IsTimingValid(self, ui):
-    """Checks if timing stats are valid."""
-    return (self.results and
-            all((c.verdict == test.TestCaseResult.AC
-                 for c in self.results.values())))
-
-
 basic_codes.CodeBase._ExecInternal = _ExecInternal
-test.TestsetResult.IsTimingValid = IsTimingValid
 
 
 # code compile

@@ -107,8 +107,7 @@ class TestsetResult(object):
 
     def IsTimingValid(self, ui):
         """Checks if timing stats are valid."""
-        return ((ui.options['precise'] or ui.options['parallelism'] <= 1) and
-                self.results and
+        return (self.results and
                 all((c.verdict == TestCaseResult.AC
                      for c in self.results.values())))
 
