@@ -1,10 +1,5 @@
 #!/usr/bin/python
 
-RIMEROOT_FILE = 'RIMEROOT'
-PROBLEM_FILE = 'PROBLEM'
-SOLUTION_FILE = 'SOLUTION'
-TESTS_FILE = 'TESTS'
-
 STAMP_FILE = '.stamp'
 
 IN_EXT = '.in'

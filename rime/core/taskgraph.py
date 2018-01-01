@@ -70,13 +70,6 @@ class Task(object):
             return id(self) == id(other)
         return self.CacheKey() == other.CacheKey()
 
-    def IsCacheable(self):
-        """Checks if this task is cachable.
-
-        Usually users should override CacheKey() only.
-        """
-        return self.CacheKey() is not None
-
     def IsExclusive(self):
         """Checks if this task is exclusive.
 
@@ -298,11 +291,7 @@ class SerialTaskGraph(object):
 
     def __init__(self):
         self.cache = dict()
-        self.blocked_task = None
         self.running = False
-
-    def IsRunning(self):
-        return self.running
 
     def Run(self, task):
         assert not self.running
@@ -341,11 +330,7 @@ class SerialTaskGraph(object):
                         value = (False, sys.exc_info())
                 elif isinstance(result, TaskBlock):
                     value = (True, None)
-                    try:
-                        self.blocked_task = task
-                        task.Wait()
-                    finally:
-                        self.blocked_task = None
+                    task.Wait()
                 elif isinstance(result, _TaskRaise):
                     self.cache[task] = (False, result.exc_info)
                     break
@@ -366,11 +351,6 @@ class SerialTaskGraph(object):
             return value
         else:
             reraise(value[0], value[1], value[2])
-
-    def GetBlockedTasks(self):
-        if self.blocked_task is not None:
-            return [self.blocked_task]
-        return []
 
 
 class FiberTaskGraph(object):
@@ -394,9 +374,6 @@ class FiberTaskGraph(object):
         self.blocked_tasks = []
         self.pending_stack = []
         self.running = False
-
-    def IsRunning(self):
-        return self.running
 
     def Run(self, init_task):
         assert not self.running
@@ -815,6 +792,3 @@ class FiberTaskGraph(object):
 
     def _LogDebug(self, msg):
         self._Log(msg, level=3)
-
-    def GetBlockedTasks(self):
-        return self.blocked_tasks[:]

@@ -328,7 +328,6 @@ class Testset(targets.registry.Testset):
         yield case_result
 
     consts.INVALID_EXT = '.invalid'
-    consts.INVALIDATION_EXT = '.invalidation'
 
     def ListInvalidTestCases(self):
         """Enumerate invalid test cases."""
@@ -763,7 +762,6 @@ def _KeyTestResultForListing(a):
     return (a.problem.id, test_summary.KeyTestResultForListing(a))
 
 
-test_summary.PrintBuildSummary = PrintBuildSummary
 test_summary.PrintTestSummary = PrintTestSummary
 
 

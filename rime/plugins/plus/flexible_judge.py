@@ -69,26 +69,8 @@ class KUPCReactiveRunner(ReactiveRunner):
             redirect_error=True)  # !redirect_error
 
 
-class TestlibReactiveRunner(ReactiveRunner):
-    PREFIX = 'testlib'
-
-    def Run(self, reactive, solution, args, cwd, input, output, timeout,
-            precise):
-        raise NotImplementedError()
-
-
-class NEERCReactiveRunner(ReactiveRunner):
-    PREFIX = 'neerc'
-
-    def Run(self, reactive, solution, args, cwd, input, output, timeout,
-            precise):
-        raise NotImplementedError()
-
-
 reactive_runner_registry = class_registry.ClassRegistry(ReactiveRunner)
 reactive_runner_registry.Add(KUPCReactiveRunner)
-# reactive_runner_registry.Add(TestlibReactiveRunner)
-# reactive_runner_registry.Add(NEERCReactiveRunner)
 
 
 class Testset(targets.registry.Testset):
@@ -137,13 +119,11 @@ class Testset(targets.registry.Testset):
                 output=outfile,
                 timeout=testcase.timeout, precise=precise)
         if res.status == core_codes.RunResult.TLE:
-            yield test.TestCaseResult(solution, testcase,
-                                      test.TestCaseResult.TLE,
-                                      time=None, cached=False)
+            yield test.TestCaseResult(
+                solution, test.TestCaseResult.TLE, time=None, cached=False)
         if res.status != core_codes.RunResult.OK:
-            yield test.TestCaseResult(solution, testcase,
-                                      test.TestCaseResult.RE,
-                                      time=None, cached=False)
+            yield test.TestCaseResult(
+                solution, test.TestCaseResult.RE, time=None, cached=False)
 
         time = res.time
         for judge in self.judges:
@@ -157,15 +137,13 @@ class Testset(targets.registry.Testset):
                 cwd=self.out_dir,
                 judgefile=judgefile)
             if res.status == core_codes.RunResult.NG:
-                yield test.TestCaseResult(solution, testcase,
-                                          test.TestCaseResult.WA,
-                                          time=None, cached=False)
+                yield test.TestCaseResult(
+                    solution, test.TestCaseResult.WA, time=None, cached=False)
             elif res.status != core_codes.RunResult.OK:
                 yield test.TestCaseResult(
-                    solution, testcase,
-                    test.TestVerdict('Validator %s' % res.status),
+                    solution, test.TestVerdict('Validator %s' % res.status),
                     time=None, cached=False)
-        yield test.TestCaseResult(solution, testcase, test.TestCaseResult.AC,
+        yield test.TestCaseResult(solution, test.TestCaseResult.AC,
                                   time=time, cached=False)
 
     @taskgraph.task_method

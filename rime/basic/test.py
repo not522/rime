@@ -37,11 +37,9 @@ class TestCaseResult(object):
     WA = TestVerdict('Wrong Answer')
     TLE = TestVerdict('Time Limit Exceeded')
     RE = TestVerdict('Runtime Error')
-    ERR = TestVerdict('System Error')
 
-    def __init__(self, solution, testcase, verdict, time, cached):
+    def __init__(self, solution, verdict, time, cached):
         self.solution = solution
-        self.testcase = testcase
         self.verdict = verdict
         self.time = time
         self.cached = cached
@@ -61,7 +59,7 @@ class TestsetResult(object):
         self.testcases = testcases
         self.results = dict(
             [(testcase,
-              TestCaseResult(solution, testcase, TestCaseResult.NA,
+              TestCaseResult(solution, TestCaseResult.NA,
                              time=None, cached=False))
              for testcase in testcases])
         assert len(self.results) == len(testcases)
@@ -106,11 +104,11 @@ class TestsetResult(object):
 
         All case should be accepted.
         """
-        return max([c.time for k, c in self.results.items()])
+        return max([c.time for _, c in self.results.items()])
 
     def GetTotalTime(self):
         """Get total time.
 
         All case should be accepted.
         """
-        return sum([c.time for k, c in self.results.items()])
+        return sum([c.time for _, c in self.results.items()])

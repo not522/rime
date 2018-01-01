@@ -39,13 +39,6 @@ class TargetBase(object):
 
         self._loaded = False
 
-    def Export(self, method, name=None):
-        """Exports a method to config modules."""
-        if not name:
-            name = method.__name__
-        assert name not in self.exports, '%s already in exports!'
-        self.exports[name] = method
-
     def Load(self, ui):
         """Loads configurations and do setups.
 
