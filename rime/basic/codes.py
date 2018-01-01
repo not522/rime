@@ -167,7 +167,7 @@ class CCode(CodeBase):
     PREFIX = 'c'
     EXTENSIONS = ['c']
 
-    def __init__(self, src_name, src_dir, out_dir, flags=['-lm']):
+    def __init__(self, src_name, src_dir, out_dir, flags=['-O2', '-lm']):
         exe_name = os.path.splitext(src_name)[0] + consts.EXE_EXT
         cc = os.getenv('CC', 'gcc')
         super(CCode, self).__init__(
@@ -182,7 +182,8 @@ class CXXCode(CodeBase):
     PREFIX = 'cxx'
     EXTENSIONS = ['cc', 'cxx']
 
-    def __init__(self, src_name, src_dir, out_dir, flags=[]):
+    def __init__(self, src_name, src_dir, out_dir,
+                 flags=['-std=c++11', '-O2']):
         exe_name = os.path.splitext(src_name)[0] + consts.EXE_EXT
         cxx = os.getenv('CXX', 'g++')
         super(CXXCode, self).__init__(
