@@ -111,7 +111,7 @@ class Testset(targets.registry.Testset):
                              case_result.verdict),
                             notable_testcase=testcase)
             ui.errors.Error(solution, result.detail)
-            if ui.options.keep_going:
+            if ui.options['keep_going']:
                 yield False
             else:
                 raise taskgraph.Bailout([False])
@@ -123,7 +123,7 @@ class Testset(targets.registry.Testset):
                                 testcase.infile),
                             notable_testcase=testcase)
             ui.errors.Error(solution, result.detail)
-            if ui.options.keep_going:
+            if ui.options['keep_going']:
                 yield False
             else:
                 raise taskgraph.Bailout([False])
@@ -177,7 +177,7 @@ class Testset(targets.registry.Testset):
                             os.path.basename(testcase.infile),
                             notable_testcase=testcase)
             ui.errors.Error(solution, result.detail)
-            if ui.options.keep_going:
+            if ui.options['keep_going']:
                 yield False
             else:
                 raise taskgraph.Bailout([False])
@@ -226,7 +226,7 @@ class Testset(targets.registry.Testset):
                                     (r.detail, judgefile))
                 else:
                     ui.errors.Error(solution, r.detail)
-            if ui.options.keep_going:
+            if ui.options['keep_going']:
                 yield False
             else:
                 raise taskgraph.Bailout([False])
@@ -252,7 +252,7 @@ class Testset(targets.registry.Testset):
             solution.src_dir, solution.code.src_name)
 
         cache_flag = (
-            ui.options.cache_tests and
+            ui.options['cache_tests'] and
             files.GetModified(solution_file_name) <
             files.GetModified(cache_file_name) and
             files.GetModified(testcase.infile) <

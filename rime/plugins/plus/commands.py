@@ -127,13 +127,13 @@ class Problem(targets.registry.Problem):
 
     def PreLoad(self, ui):
         super(Problem, self).PreLoad(ui)
-        if ui.options.rel_out_dir != "-":
+        if ui.options['rel_out_dir'] != "-":
             self.out_dir = os.path.join(
-                self.project.base_dir, ui.options.rel_out_dir, self.name,
+                self.project.base_dir, ui.options['rel_out_dir'], self.name,
                 consts.RIME_OUT_DIR)
-        if ui.options.abs_out_dir != "-":
+        if ui.options['abs_out_dir'] != "-":
             self.out_dir = os.path.join(
-                ui.options.abs_out_dir, self.name, consts.RIME_OUT_DIR)
+                ui.options['abs_out_dir'], self.name, consts.RIME_OUT_DIR)
 
     @taskgraph.task_method
     def Pack(self, ui):
@@ -147,7 +147,7 @@ class Problem(targets.registry.Problem):
             yield False
         if len(uploader_registry.classes) > 0:
             results = yield taskgraph.TaskBranch(
-                [uploader().Upload(ui, self, not ui.options.upload)
+                [uploader().Upload(ui, self, not ui.options['upload'])
                  for uploader in uploader_registry.classes.values()])
             yield all(results)
         else:
