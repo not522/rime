@@ -540,9 +540,8 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
             output=outfile,
             timeout=testcase.timeout, precise=precise)
         if res.status == core_codes.RunResult.TLE:
-            yield test.TestCaseResult(solution, testcase,
-                                      test.TestCaseResult.TLE,
-                                      time=None, cached=False)
+            yield test.TestCaseResult(
+                solution, test.TestCaseResult.TLE, time=None, cached=False)
         if res.status != core_codes.RunResult.OK:
             yield test.TestCaseResult(solution, testcase,
                                       test.TestCaseResult.RE,
@@ -558,16 +557,15 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
                 output=judgefile,
                 timeout=None, precise=False)
             if res.status == core_codes.RunResult.NG:
-                yield test.TestCaseResult(solution, testcase,
-                                          test.TestCaseResult.WA,
-                                          time=None, cached=False)
+                yield test.TestCaseResult(
+                    solution, test.TestCaseResult.WA, time=None, cached=False)
             elif res.status != core_codes.RunResult.OK:
                 yield test.TestCaseResult(
                     solution, testcase, test.TestVerdict(
                         'Validator %s' % res.status),
                     time=None, cached=False)
-        yield test.TestCaseResult(solution, testcase, test.TestCaseResult.AC,
-                                  time=time, cached=False)
+        yield test.TestCaseResult(
+            solution, test.TestCaseResult.AC, time=time, cached=False)
 
     @taskgraph.task_method
     def Clean(self, ui):

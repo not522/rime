@@ -27,9 +27,6 @@ class ClassRegistry(object):
         self.classes = {}
         self.base_class = base_class
 
-    def Get(self, name):
-        return self.classes.get(name)
-
     def Add(self, clazz, name=None):
         if name is None:
             name = clazz.__name__

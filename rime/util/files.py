@@ -26,7 +26,6 @@ from __future__ import with_statement
 import datetime
 import os
 import os.path
-import pickle
 import platform
 import shutil
 import subprocess
@@ -93,17 +92,6 @@ def ListDir(dir, recursive=False):
     return files
 
 
-def PickleSave(obj, file):
-    with open(file, 'w') as f:
-        pickle.dump(obj, f)
-
-
-def PickleLoad(file):
-    with open(file, 'r') as f:
-        obj = pickle.load(f)
-        return obj
-
-
 def ConvPath(path):
     if not platform.uname()[0].lower().startswith('cygwin'):
         return path
@@ -115,18 +103,6 @@ def ConvPath(path):
     except Exception:
         pass
     return path
-
-
-def LocateBinary(name):
-    if 'PATH' in os.environ:
-        paths = os.environ['PATH']
-    else:
-        paths = os.defpath
-    for path in paths.split(os.pathsep):
-        bin = os.path.join(path, name)
-        if os.path.isfile(bin) and os.access(bin, os.X_OK):
-            return bin
-    return None
 
 
 def OpenNull():
@@ -146,14 +122,5 @@ def WriteFile(content, name):
         with open(name, 'w') as f:
             f.write(content)
         return True
-    except Exception:
-        return False
-
-
-def AppendFile(content, name):
-    try:
-        with open(name, 'a') as f:
-            f.write(content)
-            return True
     except Exception:
         return False

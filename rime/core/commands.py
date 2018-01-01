@@ -170,10 +170,6 @@ def GetCommands():
     return commands
 
 
-def GetCommand(cmdname):
-    return GetCommands()[cmdname]
-
-
 def Parse(argv, commands):
     """Parses the command line arguments.
 

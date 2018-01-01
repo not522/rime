@@ -42,9 +42,8 @@ def LoadRequiredModules():
         commands = commands_mod.GetCommands()
         default_options = commands[None].GetDefaultOptionDict()
         null_console = console_mod.NullConsole()
-        graph = taskgraph.SerialTaskGraph()
         fake_ui = ui_mod.UiContext(
-            default_options, null_console, commands, graph)
+            default_options, null_console, commands)
         try:
             LoadProject(os.getcwd(), fake_ui)
             break
@@ -72,7 +71,7 @@ def LoadProject(cwd, ui):
     """
     path = cwd
     while not targets.registry.Project.CanLoadFrom(path):
-        (head, tail) = os.path.split(path)
+        head, _ = os.path.split(path)
         if head == path:
             return None
         path = head
@@ -116,7 +115,7 @@ def InternalMain(argv):
 
     graph = CreateTaskGraph(options)
 
-    ui = ui_mod.UiContext(options, console, commands, graph)
+    ui = ui_mod.UiContext(options, console, commands)
 
     if options['help']:
         cmd.PrintHelp(ui)

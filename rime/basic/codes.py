@@ -254,7 +254,7 @@ class InternalDiffCode(CodeBase):
         parser.add_option('-i', '--infile', dest='infile')
         parser.add_option('-d', '--difffile', dest='difffile')
         parser.add_option('-o', '--outfile', dest='outfile')
-        (options, pos_args) = parser.parse_args([''] + list(args))
+        options, _ = parser.parse_args([''] + list(args))
         run_args = ('diff', '-u', options.difffile, options.outfile)
         with open(input, 'r') as infile:
             with open(output, 'w') as outfile:
