@@ -12,7 +12,6 @@ from rime.core import taskgraph
 from rime.core import ui as ui_mod
 from rime.util import console as console_mod
 from rime.util import module_loader
-from rime.util import struct
 
 
 def LoadRequiredModules():
@@ -20,7 +19,7 @@ def LoadRequiredModules():
     module_loader.LoadPackage('rime.basic')
     while True:
         commands = commands_mod.GetCommands()
-        default_options = struct.Struct(commands[None].GetDefaultOptionDict())
+        default_options = commands[None].GetDefaultOptionDict()
         null_console = console_mod.NullConsole()
         graph = taskgraph.SerialTaskGraph()
         fake_ui = ui_mod.UiContext(
@@ -67,12 +66,12 @@ def LoadProject(cwd, ui):
 
 def CreateTaskGraph(options):
     """Creates the instance of TaskGraph to use for this session."""
-    if options.parallelism == 0:
+    if options['parallelism'] == 0:
         graph = taskgraph.SerialTaskGraph()
     else:
         graph = taskgraph.FiberTaskGraph(
-            parallelism=options.parallelism,
-            debug=options.debug)
+            parallelism=options['parallelism'],
+            debug=options['debug'])
     return graph
 
 
@@ -91,14 +90,14 @@ def InternalMain(argv):
         console.PrintError(str(e))
         return 1
 
-    if options.quiet:
+    if options['quiet']:
         console.set_quiet()
 
     graph = CreateTaskGraph(options)
 
     ui = ui_mod.UiContext(options, console, commands, graph)
 
-    if options.help:
+    if options['help']:
         cmd.PrintHelp(ui)
         return 0
 
@@ -122,7 +121,7 @@ def InternalMain(argv):
         if task:
             graph.Run(task)
     except KeyboardInterrupt:
-        if ui.options.debug >= 1:
+        if ui.options['debug'] >= 1:
             traceback.print_exc()
         raise
 

@@ -3,7 +3,6 @@
 import sys
 
 from rime.util import files
-from rime.util import struct
 
 
 # Escape sequences.
@@ -34,9 +33,9 @@ class ConsoleBase(object):
         # Whether the last print is marked "progress".
         self._last_progress = False
         for name, value in _COLOR_ESCAPE_SEQUENCES.items():
-            setattr(self, name, (self.caps.color and value or ''))
+            setattr(self, name, (self.caps['color'] and value or ''))
         for name, value in _CONTROL_ESCAPE_SEQUENCES.items():
-            setattr(self, name, (self.caps.overwrite and value or ''))
+            setattr(self, name, (self.caps['overwrite'] and value or ''))
 
     # TODO(mizuno): Move to constructor.
     def set_quiet(self):
@@ -53,7 +52,7 @@ class ConsoleBase(object):
             return
 
         msg = ''.join(args)
-        if self._last_progress and self.caps.overwrite:
+        if self._last_progress and self.caps['overwrite']:
             self.out.write(self.UP + '\r' + msg + self.KILL + '\n')
         else:
             self.out.write(msg + '\n')
@@ -97,15 +96,13 @@ class TtyConsole(ConsoleBase):
 
     @classmethod
     def _GetCaps(cls):
-        caps = struct.Struct()
-        caps.overwrite = False
-        caps.color = False
+        caps = {'overwrite': False, 'color': False}
         if sys.stdout.isatty():
             try:
                 import curses
                 curses.setupterm()
-                caps.overwrite = bool(curses.tigetstr('cuu1'))
-                caps.color = bool(curses.tigetstr('setaf'))
+                caps['overwrite'] = bool(curses.tigetstr('cuu1'))
+                caps['color'] = bool(curses.tigetstr('setaf'))
             except Exception:
                 pass
         return caps
@@ -115,5 +112,5 @@ class NullConsole(ConsoleBase):
     """Null console output."""
 
     def __init__(self):
-        null_caps = struct.Struct(color=False, overwrite=False)
+        null_caps = {'color': False, 'overwrite': False}
         super(NullConsole, self).__init__(files.OpenNull(), null_caps)
