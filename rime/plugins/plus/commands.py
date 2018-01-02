@@ -17,23 +17,6 @@ from rime.util import class_registry
 from rime.util import files
 
 
-# add out_dir option
-class DefaultCommand(commands.registry.Default):
-    def __init__(self, parent):
-        super(DefaultCommand, self).__init__(parent)
-        self.AddOptionEntry(commands.OptionEntry(
-            'r', 'rel_out_dir', 'rel_out_dir', str, "-", "rel_path",
-            'Specify the relative path of the directory'
-            'where rime-out\'s are put.'))
-        self.AddOptionEntry(commands.OptionEntry(
-            'a', 'abs_out_dir', 'abs_out_dir', str, "-", "abs_path",
-            'Specify the absolute path of the directory'
-            'where rime-out\'s are put.'))
-
-
-commands.registry.Override('Default', DefaultCommand)
-
-
 class PackerBase(object):
     @taskgraph.task_method
     def Pack(self, ui, testset):
