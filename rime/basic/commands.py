@@ -61,6 +61,14 @@ class Default(commands.CommandBase):
         self.AddOptionEntry(commands.OptionEntry(
             'q', 'quiet', 'quiet', bool, False, None,
             'Skip unimportant message.'))
+        self.AddOptionEntry(commands.OptionEntry(
+            'r', 'rel_out_dir', 'rel_out_dir', str, "-", "rel_path",
+            'Specify the relative path of the directory'
+            'where rime-out\'s are put.'))
+        self.AddOptionEntry(commands.OptionEntry(
+            'a', 'abs_out_dir', 'abs_out_dir', str, "-", "abs_path",
+            'Specify the absolute path of the directory'
+            'where rime-out\'s are put.'))
 
 
 def IsBasicTarget(obj):
