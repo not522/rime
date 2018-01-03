@@ -21,6 +21,7 @@ class Solution(targets.TargetBase, problem.ProblemComponentMixin):
         self.project = parent.project
         self.problem = parent
         self.expected_verdicts = None
+        self.expected_score = None
         problem.ProblemComponentMixin.__init__(self)
 
     def PreLoad(self, ui):
@@ -42,6 +43,9 @@ class Solution(targets.TargetBase, problem.ProblemComponentMixin):
         self.exports['TLE'] = test.TestCaseResult.TLE
         self.exports['RE'] = test.TestCaseResult.RE
 
+        def expected_score(score):
+            self.expected_score = score
+        self.exports['expected_score'] = expected_score
 
     def _WrapSolution(self, code_class):
         def Wrapped(src_name, src_dir, out_dir, challenge_cases=None,
