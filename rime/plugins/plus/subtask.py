@@ -186,18 +186,4 @@ class Testset(targets.registry.Testset):
         yield original_result
 
 
-class Solution(targets.registry.Solution):
-    def __init__(self, *args, **kwargs):
-        super(Solution, self).__init__(*args, **kwargs)
-        self.expected_score = None
-
-    def PreLoad(self, ui):
-        super(Solution, self).PreLoad(ui)
-
-        def expected_score(score):
-            self.expected_score = score
-        self.exports['expected_score'] = expected_score
-
-
-targets.registry.Override('Solution', Solution)
 targets.registry.Override('Testset', Testset)
