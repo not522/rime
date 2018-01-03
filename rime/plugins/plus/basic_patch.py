@@ -373,25 +373,3 @@ class Testset(targets.registry.Testset):
 
 
 targets.registry.Override('Testset', Testset)
-
-
-# expected verdict
-class Solution(targets.registry.Solution):
-    def __init__(self, *args, **kwargs):
-        super(Solution, self).__init__(*args, **kwargs)
-        self.expected_verdicts = None
-
-    def PreLoad(self, ui):
-        super(Solution, self).PreLoad(ui)
-
-        def expected_verdicts(verdicts):
-            self.expected_verdicts = verdicts
-        self.exports['expected_verdicts'] = expected_verdicts
-
-        self.exports['AC'] = test.TestCaseResult.AC
-        self.exports['WA'] = test.TestCaseResult.WA
-        self.exports['TLE'] = test.TestCaseResult.TLE
-        self.exports['RE'] = test.TestCaseResult.RE
-
-
-targets.registry.Override('Solution', Solution)

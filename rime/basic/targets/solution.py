@@ -23,6 +23,7 @@
 
 import itertools
 
+from rime.basic import test
 from rime.basic.targets import problem
 from rime.core import codes
 from rime.core import targets
@@ -40,6 +41,7 @@ class Solution(targets.TargetBase, problem.ProblemComponentMixin):
         super(Solution, self).__init__(name, base_dir, parent)
         self.project = parent.project
         self.problem = parent
+        self.expected_verdicts = None
         problem.ProblemComponentMixin.__init__(self)
 
     def PreLoad(self, ui):
@@ -51,6 +53,16 @@ class Solution(targets.TargetBase, problem.ProblemComponentMixin):
                                    src_dir=self.src_dir,
                                    out_dir=self.out_dir,
                                    wrapper=self._WrapSolution))
+
+        def expected_verdicts(verdicts):
+            self.expected_verdicts = verdicts
+        self.exports['expected_verdicts'] = expected_verdicts
+
+        self.exports['AC'] = test.TestCaseResult.AC
+        self.exports['WA'] = test.TestCaseResult.WA
+        self.exports['TLE'] = test.TestCaseResult.TLE
+        self.exports['RE'] = test.TestCaseResult.RE
+
 
     def _WrapSolution(self, code_class):
         def Wrapped(src_name, src_dir, out_dir, challenge_cases=None,
