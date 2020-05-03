@@ -61,17 +61,6 @@ def LoadProject(cwd, ui):
         return None
 
 
-def CreateTaskGraph(options):
-    """Creates the instance of TaskGraph to use for this session."""
-    if options['parallelism'] == 0:
-        graph = taskgraph.SerialTaskGraph()
-    else:
-        graph = taskgraph.FiberTaskGraph(
-            parallelism=options['parallelism'],
-            debug=options['debug'])
-    return graph
-
-
 def InternalMain(argv):
     """Main method called when invoked as stand-alone script."""
     LoadRequiredModules()
@@ -90,7 +79,7 @@ def InternalMain(argv):
     if options['quiet']:
         console.set_quiet()
 
-    graph = CreateTaskGraph(options)
+    graph = taskgraph.SerialTaskGraph()
 
     ui = ui_mod.UiContext(options, console, commands)
 
