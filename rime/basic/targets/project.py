@@ -5,12 +5,7 @@ from rime.core import targets
 from rime.core import taskgraph
 from rime.util import files
 
-rime_plus_version = '1.0.0'
 libdir = None
-
-
-def parseVersion(v):
-    return [int(d) for d in v.split('.')]
 
 
 class Project(targets.registry.Project):
@@ -28,13 +23,9 @@ class Project(targets.registry.Project):
         self.library_dir = None
         self.project_defined = False
 
-        def _project(library_dir=None,
-                     required_rime_plus_version=rime_plus_version):
+        def _project(library_dir=None):
             if self.project_defined:
                 raise RuntimeError('project() is already defined.')
-            if (parseVersion(rime_plus_version) <
-                    parseVersion(required_rime_plus_version)):
-                raise RuntimeError('installed rime-plus is too old.')
             global libdir
             libdir = os.path.join(
                 self.base_dir,
