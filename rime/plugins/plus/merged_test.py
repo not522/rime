@@ -224,8 +224,7 @@ class Testset(targets.registry.Testset):
         # Try all cases.
         yield taskgraph.TaskBranch([
             self._TestSolutionWithAllCasesOne(solution, testcase, result, ui)
-            for testcase in testcases],
-            unsafe_interrupt=True)
+            for testcase in testcases])
         if not result.IsFinalized():
             result.Finalize(True, 'okay')
         yield result

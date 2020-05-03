@@ -377,8 +377,7 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
         yield taskgraph.TaskBranch([
             self._TestSolutionWithChallengeCasesOne(
                 solution, testcase, result, ui)
-            for testcase in testcases],
-            unsafe_interrupt=True)
+            for testcase in testcases])
         if not result.IsFinalized():
             result.Finalize(True,
                             'Expectedly failed all challenge cases')
@@ -429,8 +428,7 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
         # Try all cases.
         yield taskgraph.TaskBranch([
             self._TestSolutionWithAllCasesOne(solution, testcase, result, ui)
-            for testcase in testcases],
-            unsafe_interrupt=True)
+            for testcase in testcases])
         if not result.IsFinalized():
             if solution.IsCorrect():
                 result.Finalize(True, result.GetTimeStats(ui))

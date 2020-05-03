@@ -79,8 +79,7 @@ class Testset(targets.registry.Testset):
         yield taskgraph.TaskBranch([
             self._TestSolutionWithChallengeCasesOne(
                 solution, testcase, result, ui)
-            for testcase in testcases],
-            unsafe_interrupt=True)
+            for testcase in testcases])
         if not result.IsFinalized():
             result.Finalize(False,
                             'Unexpectedly accepted all challenge cases')
@@ -147,8 +146,7 @@ class Testset(targets.registry.Testset):
         # Try all cases.
         yield taskgraph.TaskBranch([
             self._TestSolutionWithAllCasesOne(solution, testcase, result, ui)
-            for testcase in testcases],
-            unsafe_interrupt=True)
+            for testcase in testcases])
         if not result.IsFinalized():
             if solution.IsCorrect():
                 result.Finalize(True, result.GetTimeStats(ui))
