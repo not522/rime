@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 import os
 import os.path
 
@@ -81,8 +79,6 @@ class AOJPacker(plus_commands.PackerBase):
 
         # AOJCONF
         aoj_conf = '''\
-# -*- coding: utf-8; mode: python -*-
-
 # Problem ID
 PROBLEM_ID = '*'
 

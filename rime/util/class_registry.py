@@ -1,6 +1,3 @@
-#!/usr/bin/python
-
-
 class ClassRegistry(object):
     def __init__(self, base_class=object):
         self.classes = {}

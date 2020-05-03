@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 import itertools
 
 from rime.basic import test

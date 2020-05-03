@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 import optparse
 import os
 import os.path

@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 from rime.util import class_registry
 
 

@@ -1,8 +1,3 @@
-#!/usr/bin/python
-
-"""A framework for parallel processing in single-threaded environment."""
-
-
 import functools
 import os
 import signal

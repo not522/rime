@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 STAMP_FILE = '.stamp'
 
 IN_EXT = '.in'

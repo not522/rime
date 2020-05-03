@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 import fnmatch
 import os.path
 import re

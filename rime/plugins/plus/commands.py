@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 import os
 import os.path
 from subprocess import call
@@ -74,8 +72,6 @@ class Project(targets.registry.Project):
         name = args[1]
         if ttype == 'problem':
             content = '''\
-# -*- coding: utf-8; mode: python -*-
-
 pid='X'
 
 problem(
@@ -151,8 +147,6 @@ class Problem(targets.registry.Problem):
         name = args[1]
         if ttype == 'solution':
             content = '''\
-# -*- coding: utf-8; mode: python -*-
-
 ## Solution
 #c_solution(src='main.c') # -lm -O2 as default
 #cxx_solution(src='main.cc', flags=[]) # -std=c++11 -O2 as default
@@ -183,8 +177,6 @@ class Problem(targets.registry.Problem):
             ui.console.PrintAction('ADD', None, '%s/SOLUTION' % newdir)
         elif ttype == 'testset':
             content = '''\
-# -*- coding: utf-8; mode: python -*-
-
 ## Input generators.
 #c_generator(src='generator.c')
 #cxx_generator(src='generator.cc', dependency=['testlib.h'])
