@@ -26,13 +26,17 @@ class Problem(targets.TargetBase):
         self.problem_defined = False
 
         def _problem(time_limit, reference_solution=None,
-                     title=None, id=None, **kwargs):
+                     title=None, id=None, wiki_name='', assignees='',
+                     need_custom_judge=False, **kwargs):
             assert not self.problem_defined, 'Multiple problem definitions'
             self.problem_defined = True
             self.timeout = time_limit
             self.reference_solution = reference_solution
             self.title = title or self.name
             self.id = id
+            self.wiki_name = wiki_name
+            self.assignees = assignees
+            self.need_custom_judge = need_custom_judge
             for key in kwargs:
                 ui.errors.Warning(
                     self, 'Unknown parameter for problem(): %s' % key)

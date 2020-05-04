@@ -213,6 +213,86 @@ class Add(commands.CommandBase):
         return Run('Add', project, args, ui)
 
 
+class Wikify(commands.CommandBase):
+    def __init__(self, parent):
+        super(Wikify, self).__init__(
+            'wikify',
+            '',
+            'Upload test results to Pukiwiki.',
+            '',
+            parent)
+        self.AddOptionEntry(commands.OptionEntry(
+            's', 'skip_clean', 'skip_clean', bool, False, None,
+            'Skip cleaning generated files up.'
+        ))
+
+    def Run(self, obj, args, ui):
+        if args:
+            ui.console.PrintError('Extra argument passed to wikify command!')
+            return None
+
+        if isinstance(obj, project.Project):
+            return obj.Wikify(ui)
+
+        ui.console.PrintError(
+            'Wikify is not supported for the specified target.')
+        return None
+
+
+class WikifyFull(commands.CommandBase):
+    def __init__(self, parent):
+        super(WikifyFull, self).__init__(
+            'wikify_full',
+            '',
+            'Upload all test results to Pukiwiki.',
+            '',
+            parent)
+        self.AddOptionEntry(commands.OptionEntry(
+            's', 'skip_clean', 'skip_clean', bool, False, None,
+            'Skip cleaning generated files up.'
+        ))
+
+    def Run(self, obj, args, ui):
+        if args:
+            ui.console.PrintError(
+                'Extra argument passed to wikify_full command!')
+            return None
+
+        if isinstance(obj, project.Project):
+            return obj.WikifyFull(ui)
+
+        ui.console.PrintError(
+            'Wikify_full is not supported for the specified target.')
+        return None
+
+
+class HtmlifyFull(commands.CommandBase):
+    def __init__(self, parent):
+        super(HtmlifyFull, self).__init__(
+            'htmlify_full',
+            '',
+            'Local version of htmlify_full.',
+            '',
+            parent)
+        self.AddOptionEntry(commands.OptionEntry(
+            's', 'skip_clean', 'skip_clean', bool, False, None,
+            'Skip cleaning generated files up.'
+        ))
+
+    def Run(self, obj, args, ui):
+        if args:
+            ui.console.PrintError(
+                'Extra argument passed to htmlify_full command!')
+            return None
+
+        if isinstance(obj, project.Project):
+            return obj.HtmlifyFull(ui)
+
+        ui.console.PrintError(
+            'Htmlify_full is not supported for the specified target.')
+        return None
+
+
 class Clean(commands.CommandBase):
     def __init__(self, parent):
         super(Clean, self).__init__(
@@ -233,4 +313,7 @@ commands.registry.Add(Pack)
 commands.registry.Add(Upload)
 commands.registry.Add(Submit)
 commands.registry.Add(Add)
+commands.registry.Add(Wikify)
+commands.registry.Add(WikifyFull)
+commands.registry.Add(HtmlifyFull)
 commands.registry.Add(Clean)
