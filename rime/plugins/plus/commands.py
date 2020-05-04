@@ -38,70 +38,6 @@ uploader_registry = class_registry.ClassRegistry(UploaderBase)
 submitter_registry = class_registry.ClassRegistry(SubmitterBase)
 
 
-def EditFile(filename, initial):
-    EDITOR = os.environ.get('EDITOR', 'vi')
-    files.WriteFile(initial, filename)
-    call([EDITOR, filename])
-
-
-class Project(targets.registry.Project):
-
-    @taskgraph.task_method
-    def Pack(self, ui):
-        results = yield taskgraph.TaskBranch(
-            [problem.Pack(ui) for problem in self.problems])
-        yield all(results)
-
-    @taskgraph.task_method
-    def Upload(self, ui):
-        results = yield taskgraph.TaskBranch(
-            [problem.Upload(ui) for problem in self.problems])
-        yield all(results)
-
-    @taskgraph.task_method
-    def Submit(self, ui):
-        results = yield taskgraph.TaskBranch(
-            [problem.Submit(ui) for problem in self.problems])
-        yield all(results)
-
-    @taskgraph.task_method
-    def Add(self, args, ui):
-        if len(args) != 2:
-            yield None
-        ttype = args[0].lower()
-        name = args[1]
-        if ttype == 'problem':
-            content = '''\
-pid='X'
-
-problem(
-  time_limit=1.0,
-  id=pid,
-  title=pid + ": Your Problem Name",
-  #wiki_name="Your pukiwiki page name", # for wikify plugin
-  #assignees=['Assignees', 'for', 'this', 'problem'], # for wikify plugin
-  #need_custom_judge=True, # for wikify plugin
-  #reference_solution='???',
-  )
-
-atcoder_config(
-  task_id=None # None means a spare
-)
-'''
-            newdir = os.path.join(self.base_dir, name)
-            if(os.path.exists(newdir)):
-                ui.errors.Error(self, "{0} already exists.".format(newdir))
-                yield None
-            os.makedirs(newdir)
-            EditFile(os.path.join(newdir, 'PROBLEM'), content)
-            ui.console.PrintAction('ADD', None, '%s/PROBLEM' % newdir)
-        else:
-            ui.errors.Error(self,
-                            "Target type {0} cannot be put here.".format(
-                                ttype))
-            yield None
-
-
 class Problem(targets.registry.Problem):
 
     def PreLoad(self, ui):
@@ -287,7 +223,6 @@ class Testset(targets.registry.Testset):
         yield False
 
 
-targets.registry.Override('Project', Project)
 targets.registry.Override('Problem', Problem)
 targets.registry.Override('Solution', Solution)
 targets.registry.Override('Testset', Testset)
