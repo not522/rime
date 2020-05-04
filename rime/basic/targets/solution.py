@@ -135,7 +135,7 @@ class Solution(targets.TargetBase, problem.ProblemComponentMixin):
                  in submitter_registry.classes.values()])
             yield all(results)
         else:
-            ui.errors.Error(self, "Submit nothing: you must add some plugin.")
+            ui.errors.Error(self, "Submit nothing.")
             yield False
 
     @taskgraph.task_method

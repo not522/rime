@@ -27,9 +27,6 @@ def LoadRequiredModules():
         except targets.ConfigurationError:
             # Configuration errors should be processed later.
             break
-        except targets.ReloadConfiguration:
-            # Processed use_plugin(). Retry.
-            pass
 
 
 def CheckSystem(ui):

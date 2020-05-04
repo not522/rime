@@ -17,7 +17,7 @@ RIME_OUT_DIR = 'rime-out'
 GLOBAL_HELP = """\
 Rime is a tool for programming contest organizers to automate usual, boring
 and error-prone process of problem set preparation. It supports various
-programming contest styles like ACM-ICPC, TopCoder, etc. by plugins.
+programming contest styles like ACM-ICPC, TopCoder, etc.
 
 To see a brief description and available options of a command, try:
 

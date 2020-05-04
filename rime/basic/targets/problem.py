@@ -163,7 +163,7 @@ class Problem(targets.TargetBase):
                  for uploader in commands.uploader_registry.classes.values()])
             yield all(results)
         else:
-            ui.errors.Error(self, "Upload nothing: you must add some plugin.")
+            ui.errors.Error(self, "Upload nothing.")
             yield False
 
     @taskgraph.task_method

@@ -9,11 +9,7 @@ from rime.util import module_loader
 
 
 class Project(targets.TargetBase):
-    """Project target.
-
-    Project is the only target defined in rime.core. Here, only special methods
-    which need to be cared in the core library are defined, e.g. use_plugin().
-    """
+    """Project target."""
 
     CONFIG_FILENAME = 'PROJECT'
 
@@ -23,18 +19,7 @@ class Project(targets.TargetBase):
         self.project = self
 
     def PreLoad(self, ui):
-        # Do not use super() here because targets.Project will be overridden.
-        targets.TargetBase.PreLoad(self, ui)
-
-        def use_plugin(name):
-            module_name = 'rime.plugins.%s' % name
-            if module_name not in sys.modules:
-                if not module_loader.LoadModule(module_name):
-                    raise targets.ConfigurationError(
-                        'Failed to load a plugin: %s' % name)
-                raise targets.ReloadConfiguration(
-                    'use_plugin(%s)' % repr(name))
-        self.exports['use_plugin'] = use_plugin
+        super(Project, self).PreLoad(ui)
 
         self.library_dir = None
         self.project_defined = False
@@ -123,9 +108,9 @@ problem(
   time_limit=1.0,
   id=pid,
   title=pid + ": Your Problem Name",
-  #wiki_name="Your pukiwiki page name", # for wikify plugin
-  #assignees=['Assignees', 'for', 'this', 'problem'], # for wikify plugin
-  #need_custom_judge=True, # for wikify plugin
+  #wiki_name="Your pukiwiki page name",
+  #assignees=['Assignees', 'for', 'this', 'problem'],
+  #need_custom_judge=True,
   #reference_solution='???',
   )
 

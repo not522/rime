@@ -1157,7 +1157,7 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
                  in basic_commands.packer_registry.classes.values()])
             yield all(results)
         else:
-            ui.errors.Error(self, "Pack nothing: you must add some plugin.")
+            ui.errors.Error(self, "Pack nothing.")
             yield False
 
     @taskgraph.task_method

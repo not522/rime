@@ -136,7 +136,7 @@ class Project(targets.registry.Project):
         errors = SafeUnicode(errors)
 
         yield (u'#contents\n' +
-               (u'このセクションは wikify_full plugin により自動生成されています '
+               (u'このセクションは Rime により自動生成されています '
                 u'(rev.%(rev)s, uploaded by %(username)s @ %(hostname)s)\n' %
                 {'rev': rev, 'username': username, 'hostname': hostname}
                 ) + wiki + environments + errors + wikiFull)
@@ -284,7 +284,7 @@ class WikifyFull(rime_commands.CommandBase):
         super(WikifyFull, self).__init__(
             'wikify_full',
             '',
-            'Upload all test results to Pukiwiki. (wikify_full plugin)',
+            'Upload all test results to Pukiwiki.',
             '',
             parent)
         self.AddOptionEntry(rime_commands.OptionEntry(

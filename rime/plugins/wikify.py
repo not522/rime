@@ -69,7 +69,7 @@ class Project(targets.registry.Project):
         username = getpass.getuser()
         hostname = socket.gethostname()
         # Generate content.
-        wiki = (u'このセクションは wikify plugin により自動生成されています '
+        wiki = (u'このセクションは Rime により自動生成されています '
                 u'(rev.%(rev)s, uploaded by %(username)s @ %(hostname)s)\n' %
                 {'rev': rev, 'username': username, 'hostname': hostname})
         wiki += u'|||CENTER:|CENTER:|CENTER:|CENTER:|CENTER:|c\n'
@@ -205,7 +205,7 @@ class Wikify(rime_commands.CommandBase):
         super(Wikify, self).__init__(
             'wikify',
             '',
-            'Upload test results to Pukiwiki. (wikify plugin)',
+            'Upload test results to Pukiwiki.',
             '',
             parent)
         self.AddOptionEntry(rime_commands.OptionEntry(
