@@ -12,12 +12,12 @@ else:
 
 from rime.basic import codes as basic_codes  # NOQA
 from rime.basic import consts  # NOQA
-import rime.basic.targets.project  # NOQA
 import rime.basic.test  # NOQA
 from rime.basic import test  # NOQA
 from rime.core import commands as rime_commands  # NOQA
 from rime.core import targets  # NOQA
 from rime.core import taskgraph  # NOQA
+import rime.core.targets.project  # NOQA
 import rime.plugins.wikify  # NOQA
 
 BGCOLOR_GOOD = 'BGCOLOR(#ccffcc):'

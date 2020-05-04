@@ -6,7 +6,7 @@ setuptools.setup(
     scripts=['bin/rime', 'bin/rime_init'],
     packages=['rime', 'rime.basic', 'rime.basic.targets', 'rime.basic.util',
               'rime.core', 'rime.plugins', 'rime.plugins.judge_system',
-              'rime.plugins.plus', 'rime.util'],
+              'rime.util'],
     package_dir={'rime': 'rime'},
     install_requires=['six'],
     tests_require=['pytest', 'mock'],

@@ -3,10 +3,10 @@ import os.path
 import shutil
 
 from rime.basic import consts
+from rime.basic import commands as basic_commands
 import rime.basic.targets.testset   # NOQA
 from rime.core import targets
 from rime.core import taskgraph
-from rime.plugins.plus import commands as plus_commands
 from rime.util import files
 
 
@@ -17,7 +17,7 @@ class Testset(targets.registry.Testset):
                                      'hacker_rank')
 
 
-class HackerRankPacker(plus_commands.PackerBase):
+class HackerRankPacker(basic_commands.PackerBase):
     @taskgraph.task_method
     def Pack(self, ui, testset):
         testcases = testset.ListTestCases()
@@ -78,4 +78,4 @@ class HackerRankPacker(plus_commands.PackerBase):
 
 targets.registry.Override('Testset', Testset)
 
-plus_commands.packer_registry.Add(HackerRankPacker)
+basic_commands.packer_registry.Add(HackerRankPacker)

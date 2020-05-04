@@ -2,11 +2,11 @@ import os
 import os.path
 
 from rime.basic import codes as basic_codes
+from rime.basic import commands as basic_commands
 from rime.basic import consts
 import rime.basic.targets.testset   # NOQA
 from rime.core import targets
 from rime.core import taskgraph
-from rime.plugins.plus import commands as plus_commands
 from rime.util import files
 
 
@@ -16,7 +16,7 @@ class Testset(targets.registry.Testset):
         self.aoj_pack_dir = os.path.join(self.problem.out_dir, 'aoj')
 
 
-class AOJPacker(plus_commands.PackerBase):
+class AOJPacker(basic_commands.PackerBase):
     @taskgraph.task_method
     def Pack(self, ui, testset):
         testcases = testset.ListTestCases()
@@ -122,4 +122,4 @@ PUBLICATION_DATE = datetime.datetime(*, *, *, *, *)
 
 targets.registry.Override('Testset', Testset)
 
-plus_commands.packer_registry.Add(AOJPacker)
+basic_commands.packer_registry.Add(AOJPacker)

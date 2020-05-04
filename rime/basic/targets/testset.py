@@ -5,6 +5,7 @@ import os.path
 import re
 
 from rime.basic import codes as basic_codes
+from rime.basic import commands as basic_commands
 from rime.basic import consts
 from rime.basic.targets import problem
 from rime.basic import test
@@ -175,15 +176,6 @@ class SubtaskTestCase(test.TestCase):
     @property
     def timeout(self):
         return None
-
-
-class UploaderBase(object):
-    @taskgraph.task_method
-    def Upload(self, ui, problem, dryrun):
-        raise NotImplementedError()
-
-
-uploader_registry = class_registry.ClassRegistry(UploaderBase)
 
 
 class Testset(targets.TargetBase, problem.ProblemComponentMixin):
@@ -457,6 +449,13 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
             self._RunValidatorOne(validator, testcase, ui)
             for validator in self.validators
             for testcase in testcases])
+        if not all(results):
+            yield False
+        invalidcases = self.ListInvalidTestCases()
+        results = yield taskgraph.TaskBranch([
+            self._RunValidatorForInvalidCasesOne(validator, invalidcase, ui)
+            for validator in self.validators
+            for invalidcase in invalidcases])
         if not all(results):
             yield False
         ui.console.PrintAction('VALIDATE', self, 'OK')
@@ -1127,31 +1126,6 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
         return testcases
 
     @taskgraph.task_method
-    def _RunValidators(self, ui):
-        """Run input validators."""
-        if not self.validators:
-            # Ignore when this testset actually does not exist.
-            if self.base_dir:
-                ui.errors.Warning(self, 'Validator unavailable')
-            yield True
-        testcases = self.ListTestCases()
-        results = yield taskgraph.TaskBranch([
-            self._RunValidatorOne(validator, testcase, ui)
-            for validator in self.validators
-            for testcase in testcases])
-        if not all(results):
-            yield False
-        invalidcases = self.ListInvalidTestCases()
-        results = yield taskgraph.TaskBranch([
-            self._RunValidatorForInvalidCasesOne(validator, invalidcase, ui)
-            for validator in self.validators
-            for invalidcase in invalidcases])
-        if not all(results):
-            yield False
-        ui.console.PrintAction('VALIDATE', self, 'OK')
-        yield True
-
-    @taskgraph.task_method
     def _RunValidatorForInvalidCasesOne(self, validator, testcase, ui):
         """Run an input validator against a single input file."""
         validationfile = (
@@ -1177,10 +1151,10 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
     def Pack(self, ui):
         if not (yield self.Build(ui)):
             yield False
-        if len(packer_registry.classes) > 0:
+        if len(basic_commands.packer_registry.classes) > 0:
             results = yield taskgraph.TaskBranch(
                 [packer().Pack(ui, self) for packer
-                 in packer_registry.classes.values()])
+                 in basic_commands.packer_registry.classes.values()])
             yield all(results)
         else:
             ui.errors.Error(self, "Pack nothing: you must add some plugin.")

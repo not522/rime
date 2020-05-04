@@ -1,6 +1,7 @@
 import itertools
 import os.path
 
+from rime.basic import commands
 from rime.basic import consts
 from rime.basic.targets import project
 from rime.core import targets
@@ -156,10 +157,10 @@ class Problem(targets.TargetBase):
     def Upload(self, ui):
         if not (yield self.Pack(ui)):
             yield False
-        if len(uploader_registry.classes) > 0:
+        if len(commands.uploader_registry.classes) > 0:
             results = yield taskgraph.TaskBranch(
                 [uploader().Upload(ui, self, not ui.options['upload'])
-                 for uploader in uploader_registry.classes.values()])
+                 for uploader in commands.uploader_registry.classes.values()])
             yield all(results)
         else:
             ui.errors.Error(self, "Upload nothing: you must add some plugin.")
@@ -205,7 +206,7 @@ class Problem(targets.TargetBase):
                 ui.errors.Error(self, "{0} already exists.".format(newdir))
                 yield None
             os.makedirs(newdir)
-            EditFile(os.path.join(newdir, 'SOLUTION'), content)
+            targets.EditFile(os.path.join(newdir, 'SOLUTION'), content)
             ui.console.PrintAction('ADD', None, '%s/SOLUTION' % newdir)
         elif ttype == 'testset':
             content = '''\
@@ -258,7 +259,8 @@ id='{0}'
                 ui.errors.Error(self, "{0} already exists.".format(newdir))
                 yield None
             os.makedirs(newdir)
-            EditFile(os.path.join(newdir, 'TESTSET'), content.format(self.id))
+            targets.EditFile(os.path.join(newdir, 'TESTSET'),
+                             content.format(self.id))
             ui.console.PrintAction('ADD', self, '%s/TESTSET' % newdir)
         else:
             ui.errors.Error(self,

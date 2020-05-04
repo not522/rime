@@ -10,8 +10,6 @@ import sys
 
 from six.moves import urllib
 
-from rime.plugins.plus import rime_plus_version
-
 
 def make_file(path, content):
     with open(path, 'w') as f:
@@ -67,14 +65,11 @@ target
 # -*- coding: utf-8; mode: python -*-
 
 ## You can load plugins here.
-use_plugin('rime_plus')
 use_plugin('judge_system.atcoder')
 #use_plugin('judge_system.aoj')
 #use_plugin('judge_system.hacker_rank')
 #use_plugin('wikify')
 #use_plugin('wikify_full')
-
-project(library_dir='common', required_rime_plus_version='{0}')
 
 #wikify_config(
 #  url="http://example.com/pukiwiki/",
@@ -90,7 +85,7 @@ atcoder_config(
   username='***', password='***',
   lang_ids={{'c': 13, 'cxx': 10, 'java': 3}}
 )
-'''.format(rime_plus_version)
+'''
     make_file('PROJECT', content)
 
     if(isgit):

@@ -1,21 +1,12 @@
 import itertools
 
 from rime.basic import test
+from rime.basic.commands import submitter_registry
 from rime.basic.targets import problem
 from rime.core import codes
 from rime.core import targets
 from rime.core import taskgraph
-from rime.util import class_registry
 from rime.util import files
-
-
-class SubmitterBase(object):
-    @taskgraph.task_method
-    def Submit(self, ui, solution):
-        raise NotImplementedError()
-
-
-submitter_registry = class_registry.ClassRegistry(SubmitterBase)
 
 
 class Solution(targets.TargetBase, problem.ProblemComponentMixin):

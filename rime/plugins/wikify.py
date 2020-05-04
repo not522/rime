@@ -7,10 +7,10 @@ from six.moves import urllib
 
 from rime.basic import codes as basic_codes
 import rime.basic.targets.problem
-import rime.basic.targets.project  # NOQA
 from rime.core import commands as rime_commands
 from rime.core import targets
 from rime.core import taskgraph
+import rime.core.targets.project  # NOQA
 
 if sys.version_info[0] == 2:
     import commands as builtin_commands  # NOQA

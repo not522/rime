@@ -7,6 +7,7 @@ from six.moves import http_cookiejar
 from six.moves import urllib
 
 from rime.basic import codes as basic_codes
+from rime.basic import commands as basic_commands
 from rime.basic import consts
 import rime.basic.targets.problem
 import rime.basic.targets.project
@@ -14,7 +15,6 @@ import rime.basic.targets.solution
 import rime.basic.targets.testset  # NOQA
 from rime.core import targets
 from rime.core import taskgraph
-from rime.plugins.plus import commands as plus_commands
 from rime.util import files
 
 
@@ -92,7 +92,7 @@ class Testset(targets.registry.Testset):
         self.atcoder_pack_dir = os.path.join(self.problem.out_dir, 'atcoder')
 
 
-class AtCoderPacker(plus_commands.PackerBase):
+class AtCoderPacker(basic_commands.PackerBase):
     @taskgraph.task_method
     def Pack(self, ui, testset):
         testcases = testset.ListTestCases()
@@ -185,7 +185,7 @@ class AtCoderPacker(plus_commands.PackerBase):
         yield True
 
 
-class AtCoderUploader(plus_commands.UploaderBase):
+class AtCoderUploader(basic_commands.UploaderBase):
     @taskgraph.task_method
     def Upload(self, ui, problem, dryrun):
         if not problem.project.atcoder_config_defined:
@@ -246,7 +246,7 @@ class AtCoderUploader(plus_commands.UploaderBase):
             yield True
 
 
-class AtCoderSubmitter(plus_commands.SubmitterBase):
+class AtCoderSubmitter(basic_commands.SubmitterBase):
     @taskgraph.task_method
     def Submit(self, ui, solution):
         if not solution.project.atcoder_config_defined:
@@ -305,6 +305,6 @@ targets.registry.Override('Project', Project)
 targets.registry.Override('Problem', Problem)
 targets.registry.Override('Testset', Testset)
 
-plus_commands.packer_registry.Add(AtCoderPacker)
-plus_commands.uploader_registry.Add(AtCoderUploader)
-plus_commands.submitter_registry.Add(AtCoderSubmitter)
+basic_commands.packer_registry.Add(AtCoderPacker)
+basic_commands.uploader_registry.Add(AtCoderUploader)
+basic_commands.submitter_registry.Add(AtCoderSubmitter)

@@ -2,13 +2,14 @@ import os
 import os.path
 
 from rime.basic import consts
-from rime.basic.targets import problem
 from rime.basic.targets import project
+from rime.basic.targets import problem
 from rime.basic.targets import solution
 from rime.basic.targets import testset
 from rime.basic.util import test_summary
 from rime.core import commands
 from rime.core import taskgraph
+from rime.util import class_registry
 
 
 # Register the root command and global options.
@@ -117,6 +118,101 @@ class Test(commands.CommandBase):
         return TestWrapper()
 
 
+class PackerBase(object):
+    @taskgraph.task_method
+    def Pack(self, ui, testset):
+        raise NotImplementedError()
+
+
+class UploaderBase(object):
+    @taskgraph.task_method
+    def Upload(self, ui, problem, dryrun):
+        raise NotImplementedError()
+
+
+class SubmitterBase(object):
+    @taskgraph.task_method
+    def Submit(self, ui, solution):
+        raise NotImplementedError()
+
+
+packer_registry = class_registry.ClassRegistry(PackerBase)
+submitter_registry = class_registry.ClassRegistry(SubmitterBase)
+uploader_registry = class_registry.ClassRegistry(UploaderBase)
+
+
+class Pack(commands.CommandBase):
+    def __init__(self, parent):
+        super(Pack, self).__init__(
+            'pack',
+            '[<target>]',
+            'Pack testsets to export to online judges.',
+            '',
+            parent)
+
+    def Run(self, project, args, ui):
+        return RunCommon('Pack', project, args, ui)
+
+
+class Upload(commands.CommandBase):
+    def __init__(self, parent):
+        super(Upload, self).__init__(
+            'upload',
+            '[<target>]',
+            'Upload testsets to export to online judges.',
+            '',
+            parent)
+
+        self.AddOptionEntry(commands.OptionEntry(
+            'u', 'upload', 'upload', bool, False, None,
+            'Without this option, just dry-run.'))
+
+    def Run(self, project, args, ui):
+        return RunCommon('Upload', project, args, ui)
+
+
+class Submit(commands.CommandBase):
+    def __init__(self, parent):
+        super(Submit, self).__init__(
+            'submit',
+            '[<target>]',
+            'Submit solutions to online judges.',
+            '',
+            parent)
+
+    def Run(self, project, args, ui):
+        return RunCommon('Submit', project, args, ui)
+
+
+def Run(method_name, project, args, ui):
+    if args:
+        base_dir = os.path.abspath(args[0])
+        args = args[1:]
+    else:
+        base_dir = os.getcwd()
+
+    obj = project.FindByBaseDir(base_dir)
+    if not obj:
+        ui.errors.Error(None,
+                        'Target directory is missing or not managed by Rime.')
+        return None
+
+    return getattr(obj, method_name)(args, ui)
+
+
+class Add(commands.CommandBase):
+    def __init__(self, parent):
+        super(Add, self).__init__(
+            'add',
+            '[<parent target> <child type> <child dir>]',
+            'Add a new target directory.',
+            '',
+            parent)
+
+    def Run(self, project, args, ui):
+        return Run('Add', project, args, ui)
+
+
 class Clean(commands.CommandBase):
     def __init__(self, parent):
         super(Clean, self).__init__(
@@ -133,4 +229,8 @@ class Clean(commands.CommandBase):
 commands.registry.Add(Default)
 commands.registry.Add(Build)
 commands.registry.Add(Test)
+commands.registry.Add(Pack)
+commands.registry.Add(Upload)
+commands.registry.Add(Submit)
+commands.registry.Add(Add)
 commands.registry.Add(Clean)
