@@ -37,6 +37,14 @@ class Problem(targets.TargetBase):
                     self, 'Unknown parameter for problem(): %s' % key)
         self.exports['problem'] = _problem
 
+        if ui.options['rel_out_dir'] != "-":
+            self.out_dir = os.path.join(
+                self.project.base_dir, ui.options['rel_out_dir'], self.name,
+                consts.RIME_OUT_DIR)
+        if ui.options['abs_out_dir'] != "-":
+            self.out_dir = os.path.join(
+                ui.options['abs_out_dir'], self.name, consts.RIME_OUT_DIR)
+
     def PostLoad(self, ui):
         super(Problem, self).PostLoad(ui)
         assert self.problem_defined, 'No problem definition found'
@@ -137,6 +145,126 @@ class Problem(targets.TargetBase):
         results = yield taskgraph.TaskBranch(
             [testset.TestSolution(solution, ui) for testset in self.testsets])
         yield list(itertools.chain(*results))
+
+    @taskgraph.task_method
+    def Pack(self, ui):
+        results = yield taskgraph.TaskBranch(
+            [testset.Pack(ui) for testset in self.testsets])
+        yield all(results)
+
+    @taskgraph.task_method
+    def Upload(self, ui):
+        if not (yield self.Pack(ui)):
+            yield False
+        if len(uploader_registry.classes) > 0:
+            results = yield taskgraph.TaskBranch(
+                [uploader().Upload(ui, self, not ui.options['upload'])
+                 for uploader in uploader_registry.classes.values()])
+            yield all(results)
+        else:
+            ui.errors.Error(self, "Upload nothing: you must add some plugin.")
+            yield False
+
+    @taskgraph.task_method
+    def Submit(self, ui):
+        results = yield taskgraph.TaskBranch(
+            [solution.Submit(ui) for solution in self.solutions])
+        yield all(results)
+
+    @taskgraph.task_method
+    def Add(self, args, ui):
+        if len(args) != 2:
+            yield None
+        ttype = args[0].lower()
+        name = args[1]
+        if ttype == 'solution':
+            content = '''\
+## Solution
+#c_solution(src='main.c') # -lm -O2 as default
+#cxx_solution(src='main.cc', flags=[]) # -std=c++11 -O2 as default
+#kotlin_solution(src='main.kt') # kotlin
+#java_solution(src='Main.java', encoding='UTF-8', mainclass='Main')
+#java_solution(src='Main.java', encoding='UTF-8', mainclass='Main',
+#              challenge_cases=[])
+#java_solution(src='Main.java', encoding='UTF-8', mainclass='Main',
+#              challenge_cases=['10_corner*.in'])
+#rust_solution(src='main.rs') # Rust (rustc)
+#script_solution(src='main.sh') # shebang line is required
+#script_solution(src='main.pl') # shebang line is required
+#script_solution(src='main.py') # shebang line is required
+#script_solution(src='main.rb') # shebang line is required
+#js_solution(src='main.js') # javascript (nodejs)
+#hs_solution(src='main.hs') # haskell (stack + ghc)
+#cs_solution(src='main.cs') # C# (mono)
+
+## Score
+#expected_score(100)
+'''
+            newdir = os.path.join(self.base_dir, name)
+            if(os.path.exists(newdir)):
+                ui.errors.Error(self, "{0} already exists.".format(newdir))
+                yield None
+            os.makedirs(newdir)
+            EditFile(os.path.join(newdir, 'SOLUTION'), content)
+            ui.console.PrintAction('ADD', None, '%s/SOLUTION' % newdir)
+        elif ttype == 'testset':
+            content = '''\
+## Input generators.
+#c_generator(src='generator.c')
+#cxx_generator(src='generator.cc', dependency=['testlib.h'])
+#java_generator(src='Generator.java', encoding='UTF-8', mainclass='Generator')
+#rust_generator(src='generator.rs')
+#script_generator(src='generator.pl')
+
+## Input validators.
+#c_validator(src='validator.c')
+#cxx_validator(src='validator.cc', dependency=['testlib.h'])
+#java_validator(src='Validator.java', encoding='UTF-8',
+#               mainclass='tmp/validator/Validator')
+#rust_validator(src='validator.rs')
+#script_validator(src='validator.pl')
+
+## Output judges.
+#c_judge(src='judge.c')
+#cxx_judge(src='judge.cc', dependency=['testlib.h'],
+#          variant=testlib_judge_runner)
+#java_judge(src='Judge.java', encoding='UTF-8', mainclass='Judge')
+#rust_judge(src='judge.rs')
+#script_judge(src='judge.py')
+
+## Reactives.
+#c_reactive(src='reactive.c')
+#cxx_reactive(src='reactive.cc', dependency=['testlib.h', 'reactive.hpp'],
+#             variant=kupc_reactive_runner)
+#java_reactive(src='Reactive.java', encoding='UTF-8', mainclass='Judge')
+#rust_reactive(src='reactive.rs')
+#script_reactive(src='reactive.py')
+
+## Extra Testsets.
+# icpc type
+#icpc_merger(input_terminator='0 0\\n')
+# icpc wf ~2011
+#icpc_merger(input_terminator='0 0\\n',
+#            output_replace=casenum_replace('Case 1', 'Case {{0}}'))
+#gcj_merger(output_replace=casenum_replace('Case 1', 'Case {{0}}'))
+id='{0}'
+#merged_testset(name=id + '_Merged', input_pattern='*.in')
+#subtask_testset(name='All', score=100, input_patterns=['*'])
+# precisely scored by judge program like Jiyukenkyu (KUPC 2013)
+#scoring_judge()
+'''
+            newdir = os.path.join(self.base_dir, name)
+            if(os.path.exists(newdir)):
+                ui.errors.Error(self, "{0} already exists.".format(newdir))
+                yield None
+            os.makedirs(newdir)
+            EditFile(os.path.join(newdir, 'TESTSET'), content.format(self.id))
+            ui.console.PrintAction('ADD', self, '%s/TESTSET' % newdir)
+        else:
+            ui.errors.Error(self,
+                            "Target type {0} cannot be put here.".format(
+                                ttype))
+            yield None
 
     @taskgraph.task_method
     def Clean(self, ui):
