@@ -1165,16 +1165,6 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
             yield False
 
     @taskgraph.task_method
-    def Upload(self, ui):
-        ui.errors.Error(self, "A testset is not a target.")
-        yield False
-
-    @taskgraph.task_method
-    def Submit(self, ui):
-        ui.errors.Error(self, "A testset is not a target.")
-        yield False
-
-    @taskgraph.task_method
     def Clean(self, ui):
         """Clean the testset."""
         ui.console.PrintAction('CLEAN', self)

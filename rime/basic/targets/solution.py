@@ -116,16 +116,6 @@ class Solution(targets.TargetBase, problem.ProblemComponentMixin):
         yield list(itertools.chain(*results))
 
     @taskgraph.task_method
-    def Pack(self, ui):
-        ui.errors.Error(self, "A solution is not a target.")
-        yield False
-
-    @taskgraph.task_method
-    def Upload(self, ui):
-        ui.errors.Error(self, "A solution is not a target.")
-        yield False
-
-    @taskgraph.task_method
     def Submit(self, ui):
         if not (yield self.Build(ui)):
             yield False
