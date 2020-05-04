@@ -55,8 +55,6 @@ class TargetBase(object):
             self.PreLoad(ui)
             exec(code, self.exports, self.configs)
             self.PostLoad(ui)
-        except ReloadConfiguration:
-            raise  # Passthru
         except Exception as e:
             # TODO(nya): print pretty file/lineno for debug
             raise ConfigurationError(e)
@@ -90,10 +88,6 @@ class TargetBase(object):
 
 
 class ConfigurationError(Exception):
-    pass
-
-
-class ReloadConfiguration(Exception):
     pass
 
 
