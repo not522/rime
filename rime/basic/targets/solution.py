@@ -5,7 +5,17 @@ from rime.basic.targets import problem
 from rime.core import codes
 from rime.core import targets
 from rime.core import taskgraph
+from rime.util import class_registry
 from rime.util import files
+
+
+class SubmitterBase(object):
+    @taskgraph.task_method
+    def Submit(self, ui, solution):
+        raise NotImplementedError()
+
+
+submitter_registry = class_registry.ClassRegistry(SubmitterBase)
 
 
 class Solution(targets.TargetBase, problem.ProblemComponentMixin):
@@ -113,6 +123,29 @@ class Solution(targets.TargetBase, problem.ProblemComponentMixin):
             [testset.TestSolution(self, ui) for testset in
              self.problem.testsets])
         yield list(itertools.chain(*results))
+
+    @taskgraph.task_method
+    def Pack(self, ui):
+        ui.errors.Error(self, "A solution is not a target.")
+        yield False
+
+    @taskgraph.task_method
+    def Upload(self, ui):
+        ui.errors.Error(self, "A solution is not a target.")
+        yield False
+
+    @taskgraph.task_method
+    def Submit(self, ui):
+        if not (yield self.Build(ui)):
+            yield False
+        if len(submitter_registry.classes) > 0:
+            results = yield taskgraph.TaskBranch(
+                [submitter().Submit(ui, self) for submitter
+                 in submitter_registry.classes.values()])
+            yield all(results)
+        else:
+            ui.errors.Error(self, "Submit nothing: you must add some plugin.")
+            yield False
 
     @taskgraph.task_method
     def Clean(self, ui):

@@ -27,41 +27,8 @@ class UploaderBase(object):
         raise NotImplementedError()
 
 
-class SubmitterBase(object):
-    @taskgraph.task_method
-    def Submit(self, ui, solution):
-        raise NotImplementedError()
-
-
 packer_registry = class_registry.ClassRegistry(PackerBase)
 uploader_registry = class_registry.ClassRegistry(UploaderBase)
-submitter_registry = class_registry.ClassRegistry(SubmitterBase)
-
-
-class Solution(targets.registry.Solution):
-
-    @taskgraph.task_method
-    def Pack(self, ui):
-        ui.errors.Error(self, "A solution is not a target.")
-        yield False
-
-    @taskgraph.task_method
-    def Upload(self, ui):
-        ui.errors.Error(self, "A solution is not a target.")
-        yield False
-
-    @taskgraph.task_method
-    def Submit(self, ui):
-        if not (yield self.Build(ui)):
-            yield False
-        if len(submitter_registry.classes) > 0:
-            results = yield taskgraph.TaskBranch(
-                [submitter().Submit(ui, self) for submitter
-                 in submitter_registry.classes.values()])
-            yield all(results)
-        else:
-            ui.errors.Error(self, "Submit nothing: you must add some plugin.")
-            yield False
 
 
 class Testset(targets.registry.Testset):
@@ -90,7 +57,6 @@ class Testset(targets.registry.Testset):
         yield False
 
 
-targets.registry.Override('Solution', Solution)
 targets.registry.Override('Testset', Testset)
 
 
