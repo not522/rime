@@ -10,11 +10,6 @@ class ClassRegistry(object):
         assert issubclass(clazz, self.base_class)
         self.classes[name] = clazz
 
-    def Override(self, name, clazz):
-        assert name in self.classes
-        assert issubclass(clazz, self.classes[name])
-        self.classes[name] = clazz
-
     def __getattribute__(self, name):
         try:
             return super(ClassRegistry, self).__getattribute__(name)
