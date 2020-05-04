@@ -50,6 +50,13 @@ class Problem(targets.TargetBase):
             self.out_dir = os.path.join(
                 ui.options['abs_out_dir'], self.name, consts.RIME_OUT_DIR)
 
+        self.atcoder_config_defined = False
+
+        def _atcoder_config(task_id=None):
+            self.atcoder_config_defined = True
+            self.atcoder_task_id = task_id
+        self.exports['atcoder_config'] = _atcoder_config
+
     def PostLoad(self, ui):
         super(Problem, self).PostLoad(ui)
         assert self.problem_defined, 'No problem definition found'
@@ -172,6 +179,13 @@ class Problem(targets.TargetBase):
 
     @taskgraph.task_method
     def Submit(self, ui):
+        if self.atcoder_config_defined:
+            if self.atcoder_task_id is None:
+                ui.console.PrintAction(
+                    'SUBMIT', self,
+                    'This problem is considered to a spare. Not submitted.')
+                yield True
+
         results = yield taskgraph.TaskBranch(
             [solution.Submit(ui) for solution in self.solutions])
         yield all(results)

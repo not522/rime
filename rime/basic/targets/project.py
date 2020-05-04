@@ -7,6 +7,7 @@ import re
 import socket
 import sys
 
+from six.moves import http_cookiejar
 from six.moves import urllib
 
 from rime.basic import codes as basic_codes
@@ -21,6 +22,11 @@ if sys.version_info[0] == 2:
 else:
     import subprocess as builtin_commands
 
+
+# opener with cookiejar
+cookiejar = http_cookiejar.CookieJar()
+opener = urllib.request.build_opener(
+    urllib.request.HTTPCookieProcessor(cookiejar))
 
 BGCOLOR_GOOD = 'BGCOLOR(#ccffcc):'
 BGCOLOR_NOTBAD = 'BGCOLOR(#ffffcc):'
@@ -128,6 +134,19 @@ class Project(targets.TargetBase):
             self.wikify_auth_password = auth_password
         self.exports['wikify_config'] = _wikify_config
 
+        self.atcoder_config_defined = False
+
+        def _atcoder_config(upload_script, contest_url, username, password,
+                            lang_ids):
+            self.atcoder_config_defined = True
+            self.atcoder_upload_script = upload_script
+            self.atcoder_contest_url = contest_url
+            self.atcoder_username = username
+            self.atcoder_password = password
+            self.atcoder_lang_ids = lang_ids
+        self.exports['atcoder_config'] = _atcoder_config
+        self.atcoder_logined = False
+
     def PostLoad(self, ui):
         super(Project, self).PostLoad(ui)
         self._ChainLoad(ui)
@@ -177,9 +196,28 @@ class Project(targets.TargetBase):
 
     @taskgraph.task_method
     def Upload(self, ui):
+        if self.atcoder_config_defined:
+            script = os.path.join(self.atcoder_upload_script)
+            if not os.path.exists(os.path.join(self.base_dir, script)):
+                ui.errors.Error(self, script + ' is not found.')
+                yield False
+
         results = yield taskgraph.TaskBranch(
             [problem.Upload(ui) for problem in self.problems])
         yield all(results)
+
+    def _Request(self, path, data=None):
+        if type(data) == dict:
+            data = urllib.parse.urlencode(data).encode('utf-8')
+        req = urllib.request.Request(self.atcoder_contest_url + path, data)
+        return opener.open(req)
+
+    def _Login(self):
+        if not self.atcoder_logined:
+            self._Request('login',
+                          {'name': self.atcoder_username,
+                           'password': self.atcoder_password})
+            self.atcoder_logined = True
 
     @taskgraph.task_method
     def Submit(self, ui):

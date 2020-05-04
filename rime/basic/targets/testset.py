@@ -204,6 +204,10 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
         self.subtask_testcases = []
         self.scoring_judge = False
 
+        self.aoj_pack_dir = os.path.join(self.problem.out_dir, 'aoj')
+        self.atcoder_pack_dir = os.path.join(self.problem.out_dir, 'atcoder')
+        self.pack_dir = os.path.join(self.problem.out_dir, 'hacker_rank')
+
     @classmethod
     def CreateEmpty(cls, parent, ui):
         # Workaround for no testset case.
