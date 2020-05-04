@@ -177,6 +177,15 @@ class SubtaskTestCase(test.TestCase):
         return None
 
 
+class UploaderBase(object):
+    @taskgraph.task_method
+    def Upload(self, ui, problem, dryrun):
+        raise NotImplementedError()
+
+
+uploader_registry = class_registry.ClassRegistry(UploaderBase)
+
+
 class Testset(targets.TargetBase, problem.ProblemComponentMixin):
     """Testset target."""
 
@@ -1163,6 +1172,29 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
             '%s: Expectedly Failed' % os.path.basename(testcase.infile),
             progress=True)
         yield True
+
+    @taskgraph.task_method
+    def Pack(self, ui):
+        if not (yield self.Build(ui)):
+            yield False
+        if len(packer_registry.classes) > 0:
+            results = yield taskgraph.TaskBranch(
+                [packer().Pack(ui, self) for packer
+                 in packer_registry.classes.values()])
+            yield all(results)
+        else:
+            ui.errors.Error(self, "Pack nothing: you must add some plugin.")
+            yield False
+
+    @taskgraph.task_method
+    def Upload(self, ui):
+        ui.errors.Error(self, "A testset is not a target.")
+        yield False
+
+    @taskgraph.task_method
+    def Submit(self, ui):
+        ui.errors.Error(self, "A testset is not a target.")
+        yield False
 
     @taskgraph.task_method
     def Clean(self, ui):
