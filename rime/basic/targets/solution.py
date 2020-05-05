@@ -24,7 +24,6 @@ class Solution(targets.TargetBase, problem.ProblemComponentMixin):
         problem.ProblemComponentMixin.__init__(self)
 
     def PreLoad(self, ui):
-        super(Solution, self).PreLoad(ui)
         self._codes = []
         self.exports.update(
             codes.CreateDictionary('%s_solution',
@@ -55,7 +54,6 @@ class Solution(targets.TargetBase, problem.ProblemComponentMixin):
         return Wrapped
 
     def PostLoad(self, ui):
-        super(Solution, self).PostLoad(ui)
         if len(self._codes) == 0:
             self._CompatGuessSolution(ui)
         if len(self._codes) >= 2:

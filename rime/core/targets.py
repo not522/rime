@@ -59,20 +59,6 @@ class TargetBase(object):
             # TODO(nya): print pretty file/lineno for debug
             raise ConfigurationError(e)
 
-    def PreLoad(self, ui):
-        """Called just before evaluation of configs.
-
-        Subclasses should setup exported symbols by self.exports.
-        """
-        pass
-
-    def PostLoad(self, ui):
-        """Called just after evaluation of configs.
-
-        Subclasses can do post-processing of configs here.
-        """
-        pass
-
     def FindByBaseDir(self, base_dir):
         """Search whole subtree and return the object with matching base_dir.
 

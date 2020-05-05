@@ -105,8 +105,6 @@ class Project(targets.TargetBase):
         self.project = self
 
     def PreLoad(self, ui):
-        super(Project, self).PreLoad(ui)
-
         self.library_dir = None
         self.project_defined = False
 
@@ -148,7 +146,6 @@ class Project(targets.TargetBase):
         self.atcoder_logined = False
 
     def PostLoad(self, ui):
-        super(Project, self).PostLoad(ui)
         self._ChainLoad(ui)
 
     def _ChainLoad(self, ui):

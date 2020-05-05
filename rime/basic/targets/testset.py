@@ -218,7 +218,6 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
         return testset
 
     def PreLoad(self, ui):
-        super(Testset, self).PreLoad(ui)
         self.generators = []
         self.validators = []
         self.judges = []

@@ -22,7 +22,6 @@ class Problem(targets.TargetBase):
         self.out_dir = os.path.join(self.problem.base_dir, consts.RIME_OUT_DIR)
 
     def PreLoad(self, ui):
-        super(Problem, self).PreLoad(ui)
         self.problem_defined = False
 
         def _problem(time_limit, reference_solution=None,
@@ -58,7 +57,6 @@ class Problem(targets.TargetBase):
         self.exports['atcoder_config'] = _atcoder_config
 
     def PostLoad(self, ui):
-        super(Problem, self).PostLoad(ui)
         assert self.problem_defined, 'No problem definition found'
         self._ChainLoad(ui)
         self._ParseSettings(ui)
