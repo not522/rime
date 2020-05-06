@@ -230,21 +230,9 @@ class Project(targets.TargetBase):
         name = args[1]
         if ttype == 'problem':
             content = '''\
-pid='X'
-
-problem(
-  time_limit=1.0,
-  id=pid,
-  title=pid + ": Your Problem Name",
-  #wiki_name="Your pukiwiki page name",
-  #assignees=['Assignees', 'for', 'this', 'problem'],
-  #need_custom_judge=True,
-  #reference_solution='???',
-  )
-
-atcoder_config(
-  task_id=None # None means a spare
-)
+{
+    time_limit=1.0
+}
 '''
             newdir = os.path.join(self.base_dir, name)
             if(os.path.exists(newdir)):
@@ -292,9 +280,9 @@ atcoder_config(
     @taskgraph.task_method
     def _GenerateWikiOne(self, problem, ui):
         # Get status.
-        title = SafeUnicode(problem.title) or 'No Title'
-        wiki_name = SafeUnicode(problem.wiki_name) or 'No Wiki Name'
-        assignees = problem.assignees
+        title = SafeUnicode(problem.wikify_config.title)
+        page = SafeUnicode(problem.wikify_config.page)
+        assignees = problem.wikify_config.assignees
         if isinstance(assignees, list):
             assignees = ','.join(assignees)
         assignees = SafeUnicode(assignees)
@@ -309,7 +297,7 @@ atcoder_config(
         num_incorrects = num_solutions - num_corrects
         num_agreed = len([result for result in correct_solution_results
                           if result.expected])
-        need_custom_judge = problem.need_custom_judge
+        need_custom_judge = problem.wikify_config.need_custom_judge
         # Solutions:
         if num_corrects >= 2:
             cell_solutions = BGCOLOR_GOOD
@@ -349,7 +337,7 @@ atcoder_config(
             cell_judge = CELL_NA
         # Done.
         yield (u'|[[{}>{}]]|{}|{}|{}|{}|{}|{}|\n'.format(
-            title, wiki_name, assignees, cell_solutions, cell_input,
+            title, page, assignees, cell_solutions, cell_input,
             cell_output, cell_validator, cell_judge))
 
     def _UploadWiki(self, wiki, ui):
@@ -474,9 +462,9 @@ atcoder_config(
         yield problem.Build(ui)
 
         # Get status.
-        title = SafeUnicode(problem.title) or 'No Title'
-        wiki_name = SafeUnicode(problem.wiki_name) or 'No Wiki Name'
-        assignees = problem.assignees
+        title = SafeUnicode(problem.wikify_config.title)
+        page = SafeUnicode(problem.wikify_config.page)
+        assignees = problem.wikify_config.assignees
         if isinstance(assignees, list):
             assignees = ','.join(assignees)
         assignees = SafeUnicode(assignees)
@@ -547,7 +535,7 @@ atcoder_config(
         num_incorrects = num_solutions - num_corrects
         num_agreed = len([result for result in correct_solution_results
                           if result.expected])
-        need_custom_judge = problem.need_custom_judge
+        need_custom_judge = problem.wikify_config.need_custom_judge
 
         # Solutions:
         if num_corrects >= 2:
@@ -593,7 +581,7 @@ atcoder_config(
 
         # Done.
         wiki = (u'|[[{}>{}]]|{}|{}|{}|{}|{}|{}|\n'.format(
-            title, wiki_name, assignees, cell_solutions, cell_input,
+            title, page, assignees, cell_solutions, cell_input,
             cell_output, cell_validator, cell_judge))
 
         yield (wiki, wikiFull)
@@ -697,8 +685,8 @@ atcoder_config(
         yield problem.Build(ui)
 
         # Get status.
-        title = SafeUnicode(problem.title) or 'No Title'
-        assignees = problem.assignees
+        title = SafeUnicode(problem.wikify_config.title)
+        assignees = problem.wikify_config.assignees
         if isinstance(assignees, list):
             assignees = ','.join(assignees)
         assignees = SafeUnicode(assignees)
@@ -768,7 +756,7 @@ atcoder_config(
         num_incorrects = num_solutions - num_corrects
         num_agreed = len([result for result in correct_solution_results
                           if result.expected])
-        need_custom_judge = problem.need_custom_judge
+        need_custom_judge = problem.wikify_config.need_custom_judge
 
         # Solutions:
         if num_corrects >= 2:

@@ -51,9 +51,10 @@ class TargetBase(object):
         except IOError:
             raise ConfigurationError('cannot read file: %s' % self.config_file)
         try:
-            code = compile(script, self.config_file, 'exec')
             self.PreLoad(ui)
-            exec(code, self.exports, self.configs)
+            if self.config_file[-5:] != '.json':
+                code = compile(script, self.config_file, 'exec')
+                exec(code, self.exports, self.configs)
             self.PostLoad(ui)
         except Exception as e:
             # TODO(nya): print pretty file/lineno for debug

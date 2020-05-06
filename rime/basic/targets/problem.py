@@ -1,4 +1,5 @@
 import itertools
+import json
 import os.path
 
 from rime.basic import commands
@@ -9,10 +10,18 @@ from rime.core import taskgraph
 from rime.util import files
 
 
+class WikifyConfig(object):
+    def __init__(self, config, name):
+        self.title = config.get('title', name)
+        self.page = config.get('page', '')
+        self.assignees = config.get('assignees', '')
+        self.need_custom_judge = config.get('need_custom_judge', False)
+
+
 class Problem(targets.TargetBase):
     """Problem target."""
 
-    CONFIG_FILENAME = 'PROBLEM'
+    CONFIG_FILENAME = 'problem.json'
 
     def __init__(self, name, base_dir, parent):
         assert isinstance(parent, project.Project)
@@ -22,25 +31,6 @@ class Problem(targets.TargetBase):
         self.out_dir = os.path.join(self.problem.base_dir, consts.RIME_OUT_DIR)
 
     def PreLoad(self, ui):
-        self.problem_defined = False
-
-        def _problem(time_limit, reference_solution=None,
-                     title=None, id=None, wiki_name='', assignees='',
-                     need_custom_judge=False, **kwargs):
-            assert not self.problem_defined, 'Multiple problem definitions'
-            self.problem_defined = True
-            self.timeout = time_limit
-            self.reference_solution = reference_solution
-            self.title = title or self.name
-            self.id = id
-            self.wiki_name = wiki_name
-            self.assignees = assignees
-            self.need_custom_judge = need_custom_judge
-            for key in kwargs:
-                ui.errors.Warning(
-                    self, 'Unknown parameter for problem(): %s' % key)
-        self.exports['problem'] = _problem
-
         if ui.options['rel_out_dir'] != "-":
             self.out_dir = os.path.join(
                 self.project.base_dir, ui.options['rel_out_dir'], self.name,
@@ -49,15 +39,21 @@ class Problem(targets.TargetBase):
             self.out_dir = os.path.join(
                 ui.options['abs_out_dir'], self.name, consts.RIME_OUT_DIR)
 
-        self.atcoder_config_defined = False
+        with open(self.config_file) as f:
+            config = json.load(f)
 
-        def _atcoder_config(task_id=None):
-            self.atcoder_config_defined = True
-            self.atcoder_task_id = task_id
-        self.exports['atcoder_config'] = _atcoder_config
+        self.id = config.get('id', '')
+        self.timeout = config['time_limit']
+        self.reference_solution = config.get('reference_solution')
+
+        if 'wikify_config' in config:
+            self.wikify_config = WikifyConfig(config, self.name)
+        else:
+            self.wikify_config = None
+
+        self.atcoder_task_id = config.get('atcoder_task_id')
 
     def PostLoad(self, ui):
-        assert self.problem_defined, 'No problem definition found'
         self._ChainLoad(ui)
         self._ParseSettings(ui)
 
@@ -177,12 +173,11 @@ class Problem(targets.TargetBase):
 
     @taskgraph.task_method
     def Submit(self, ui):
-        if self.atcoder_config_defined:
-            if self.atcoder_task_id is None:
-                ui.console.PrintAction(
-                    'SUBMIT', self,
-                    'This problem is considered to a spare. Not submitted.')
-                yield True
+        if self.atcoder_task_id is None:
+            ui.console.PrintAction(
+                'SUBMIT', self,
+                'This problem is considered to a spare. Not submitted.')
+            yield True
 
         results = yield taskgraph.TaskBranch(
             [solution.Submit(ui) for solution in self.solutions])

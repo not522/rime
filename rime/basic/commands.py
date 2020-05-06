@@ -502,11 +502,6 @@ class AtCoderUploader(UploaderBase):
                 problem, 'atcoder_config is not defined in PROJECT.')
             yield False
 
-        if not problem.atcoder_config_defined:
-            ui.errors.Error(
-                problem, 'atcoder_config() is not defined in PROBLEM.')
-            yield False
-
         if problem.atcoder_task_id is None:
             ui.console.PrintAction(
                 'UPLOAD', problem,

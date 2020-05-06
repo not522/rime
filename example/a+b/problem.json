@@ -1,0 +1,10 @@
+{
+    "time_limit":1.0,
+    "wikify_config":{
+        "title":"A+B Problem",
+        "id":"A",
+        "page":"A+B",
+        "assignees":"assignee",
+        "need_custom_judge":false
+    }
+}
