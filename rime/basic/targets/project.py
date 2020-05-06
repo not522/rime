@@ -2,6 +2,7 @@ import codecs
 import getpass
 import hashlib
 import itertools
+import json
 import os
 import re
 import socket
@@ -94,10 +95,30 @@ def GetHtmlifyFileComment(dir, filename):
         return ''
 
 
+class WikifyConfig(object):
+    def __init__(self, config):
+        self.url = config['url']
+        self.page = config['page']
+        self.encoding = config.get('encoding', 'utf-8')
+        self.realm = config.get('realm')
+        self.username = config.get('username')
+        self.password = config.get('password')
+
+
+class AtCoderConfig(object):
+    def __init__(self, config):
+        self.upload_script = config['upload_script']
+        self.url = config['url']
+        self.username = config['username']
+        self.password = config['password']
+        self.lang_ids = config['lang_ids']
+        self.logined = False
+
+
 class Project(targets.TargetBase):
     """Project target."""
 
-    CONFIG_FILENAME = 'PROJECT'
+    CONFIG_FILENAME = 'project.json'
 
     def __init__(self, name, base_dir, parent):
         assert parent is None
@@ -105,45 +126,24 @@ class Project(targets.TargetBase):
         self.project = self
 
     def PreLoad(self, ui):
-        self.library_dir = None
-        self.project_defined = False
+        with open(self.config_file) as f:
+            config = json.load(f)
 
-        def _project(library_dir=None):
-            if self.project_defined:
-                raise RuntimeError('project() is already defined.')
-            global libdir
-            libdir = os.path.join(
-                self.base_dir,
-                library_dir)
-            self.library_dir = libdir
-            self.project_defined = True
-        self.exports['project'] = _project
+        if 'library_dir' in config:
+            self.library_dir = os.path.join(
+                self.base_dir, config['library_dir'])
+        else:
+            self.library_dir = None
 
-        self.wikify_config_defined = False
+        if 'wikify_config' in config:
+            self.wikify_config = WikifyConfig(config['wikify_config'])
+        else:
+            self.wikify_config = None
 
-        def _wikify_config(url, page, encoding="utf-8", auth_realm=None,
-                           auth_username=None, auth_password=None):
-            self.wikify_config_defined = True
-            self.wikify_url = url
-            self.wikify_page = page
-            self.wikify_encoding = encoding
-            self.wikify_auth_realm = auth_realm
-            self.wikify_auth_username = auth_username
-            self.wikify_auth_password = auth_password
-        self.exports['wikify_config'] = _wikify_config
-
-        self.atcoder_config_defined = False
-
-        def _atcoder_config(upload_script, contest_url, username, password,
-                            lang_ids):
-            self.atcoder_config_defined = True
-            self.atcoder_upload_script = upload_script
-            self.atcoder_contest_url = contest_url
-            self.atcoder_username = username
-            self.atcoder_password = password
-            self.atcoder_lang_ids = lang_ids
-        self.exports['atcoder_config'] = _atcoder_config
-        self.atcoder_logined = False
+        if 'atcoder_config' in config:
+            self.atcoder_config = AtCoderConfig(config['atcoder_config'])
+        else:
+            self.atcoder_config = None
 
     def PostLoad(self, ui):
         self._ChainLoad(ui)
@@ -193,8 +193,8 @@ class Project(targets.TargetBase):
 
     @taskgraph.task_method
     def Upload(self, ui):
-        if self.atcoder_config_defined:
-            script = os.path.join(self.atcoder_upload_script)
+        if self.atcoder_config is not None:
+            script = os.path.join(self.atcoder_config.upload_script)
             if not os.path.exists(os.path.join(self.base_dir, script)):
                 ui.errors.Error(self, script + ' is not found.')
                 yield False
@@ -206,15 +206,15 @@ class Project(targets.TargetBase):
     def _Request(self, path, data=None):
         if type(data) == dict:
             data = urllib.parse.urlencode(data).encode('utf-8')
-        req = urllib.request.Request(self.atcoder_contest_url + path, data)
+        req = urllib.request.Request(self.atcoder_config.url + path, data)
         return opener.open(req)
 
     def _Login(self):
-        if not self.atcoder_logined:
+        if not self.atcoder_config.logined:
             self._Request('login',
-                          {'name': self.atcoder_username,
-                           'password': self.atcoder_password})
-            self.atcoder_logined = True
+                          {'name': self.atcoder_config.username,
+                           'password': self.atcoder_config.password})
+            self.atcoder_config.logined = True
 
     @taskgraph.task_method
     def Submit(self, ui):
@@ -261,8 +261,8 @@ atcoder_config(
 
     @taskgraph.task_method
     def Wikify(self, ui):
-        if not self.wikify_config_defined:
-            ui.errors.Error(self, 'wikify_config() is not defined.')
+        if self.wikify_config is None:
+            ui.errors.Error(self, 'wikify_config is not defined.')
             yield None
         wiki = yield self._GenerateWiki(ui)
         self._UploadWiki(wiki, ui)
@@ -353,18 +353,18 @@ atcoder_config(
             cell_output, cell_validator, cell_judge))
 
     def _UploadWiki(self, wiki, ui):
-        url = self.wikify_url
-        page = SafeUnicode(self.wikify_page)
-        encoding = self.wikify_encoding
-        auth_realm = SafeUnicode(self.wikify_auth_realm)
-        auth_username = self.wikify_auth_username
-        auth_password = self.wikify_auth_password
+        url = self.wikify_config.url
+        page = SafeUnicode(self.wikify_config.page)
+        encoding = self.wikify_config.encoding
+        auth_realm = SafeUnicode(self.wikify_config.realm)
+        auth_username = self.wikify_config.username
+        auth_password = self.wikify_config.password
         auth_hostname = urllib.parse.urlparse(url).hostname
 
         native_page = page.encode(encoding)
         native_wiki = wiki.encode(encoding)
 
-        if self.wikify_auth_realm:
+        if self.wikify_config.realm:
             auth_handler = urllib.request.HTTPBasicAuthHandler()
             auth_handler.add_password(
                 auth_realm, auth_hostname, auth_username, auth_password)
@@ -397,8 +397,8 @@ atcoder_config(
 
     @taskgraph.task_method
     def WikifyFull(self, ui):
-        if not self.wikify_config_defined:
-            ui.errors.Error(self, 'wikify_config() is not defined.')
+        if self.wikify_config is None:
+            ui.errors.Error(self, 'wikify_config is not defined.')
             yield None
         wikiFull = yield self._GenerateWikiFull(ui)
         self._UploadWiki(wikiFull, ui)

@@ -497,9 +497,9 @@ class AtCoderPacker(PackerBase):
 class AtCoderUploader(UploaderBase):
     @taskgraph.task_method
     def Upload(self, ui, problem, dryrun):
-        if not problem.project.atcoder_config_defined:
+        if problem.project.atcoder_config is None:
             ui.errors.Error(
-                problem, 'atcoder_config() is not defined in PROJECT.')
+                problem, 'atcoder_config is not defined in PROJECT.')
             yield False
 
         if not problem.atcoder_config_defined:
@@ -513,7 +513,7 @@ class AtCoderUploader(UploaderBase):
                 'This problem is considered to a spare. Not uploaded.')
             yield True
 
-        script = os.path.join(problem.project.atcoder_upload_script)
+        script = os.path.join(problem.project.atcoder_config.upload_script)
         if not os.path.exists(os.path.join(problem.project.base_dir, script)):
             ui.errors.Error(problem, script + ' is not found.')
             yield False
@@ -558,15 +558,16 @@ class AtCoderUploader(UploaderBase):
 class AtCoderSubmitter(SubmitterBase):
     @taskgraph.task_method
     def Submit(self, ui, solution):
-        if not solution.project.atcoder_config_defined:
+        if solution.project.atcoder_config is None:
             ui.errors.Error(
-                solution, 'atcoder_config() is not defined in PROJECT.')
+                solution, 'atcoder_config is not defined in PROJECT.')
             yield False
 
         solution.project._Login()
 
         task_id = str(solution.problem.atcoder_task_id)
-        lang_id = solution.project.atcoder_lang_ids[solution.code.PREFIX]
+        lang_id = solution.project.atcoder_config.lang_ids[
+            solution.code.PREFIX]
         source_code = files.ReadFile(
             os.path.join(solution.src_dir, solution.code.src_name))
 

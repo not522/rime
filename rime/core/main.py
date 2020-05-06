@@ -94,7 +94,7 @@ def InternalMain(argv):
         return 1
     if not project and not isinstance(cmd, commands_mod.Help):
         console.PrintError(
-            'PROJECT not found. Make sure you are in Rime subtree.')
+            'project.json not found. Make sure you are in Rime subtree.')
         return 1
 
     # Run the task.

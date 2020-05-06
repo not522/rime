@@ -17,7 +17,7 @@ def make_file(path, content):
 
 
 if __name__ == '__main__':
-    if os.path.exists('PROJECT'):
+    if os.path.exists('project.json'):
         print('This directory is already a rime project root.')
         sys.exit(1)
 
@@ -57,33 +57,22 @@ target
             'MikeMirzayanov/testlib/master/testlib.h',
             'common/testlib.h')
     except Exception:
-        os.remove('PROJECT')
+        os.remove('project.json')
         print('Some error while downloading testlib.h.')
         sys.exit(1)
 
     content = '''\
-#wikify_config(
-#  url="http://example.com/pukiwiki/",
-#  page="***",
-#  encoding="utf-8",
-#  auth_realm="***",
-#  auth_username="***",
-#  auth_password="***")
-
-atcoder_config(
-  upload_script='***',
-  contest_url='https://***.contest.atcoder.jp/',
-  username='***', password='***',
-  lang_ids={{'c': 13, 'cxx': 10, 'java': 3}}
-)
+{
+    "library_dir":"common"
+}
 '''
-    make_file('PROJECT', content)
+    make_file('project.json', content)
 
     if(isgit):
         os.system('git init')
-        os.system('git add PROJECT .gitignore common/testlib.h')
+        os.system('git add project.json .gitignore common/testlib.h')
         os.system('git commit -m "Initial commit"')
     else:
         os.system('hg init')
-        os.system('hg add PROJECT .hgignore common/testlib.h')
+        os.system('hg add project.json .hgignore common/testlib.h')
         os.system('hg commit -m "Initial commit"')
