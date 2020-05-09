@@ -82,8 +82,8 @@ class AutoCode(Code):
     PREFIX = 'auto'
     EXTENSIONS = []
 
-    def __init__(self, src_name, src_dir, out_dir, *args, **kwargs):
-        src_ext = os.path.splitext(src_name)[1][1:]
+    def __init__(self, src, src_dir, out_dir, *args, **kwargs):
+        src_ext = os.path.splitext(src)[1][1:]
         for code_class in registry.classes.values():
             if src_ext in code_class.EXTENSIONS:
                 break
@@ -94,7 +94,7 @@ class AutoCode(Code):
                 'Unknown code extension: %s' % src_ext)
         # Swap the class in runtime.
         self.__class__ = code_class
-        self.__init__(src_name, src_dir, out_dir, *args, **kwargs)
+        self.__init__(src, src_dir, out_dir, *args, **kwargs)
 
 
 registry.Add(AutoCode)

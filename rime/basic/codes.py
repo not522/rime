@@ -144,7 +144,7 @@ class CCode(CodeBase):
     PREFIX = 'c'
     EXTENSIONS = ['c']
 
-    def __init__(self, src_name, src_dir, out_dir, flags=['-O2', '-lm']):
+    def __init__(self, src_name, src_dir, out_dir, flags=['-O2', '-lm'], **kwargs):
         exe_name = os.path.splitext(src_name)[0] + consts.EXE_EXT
         cc = os.getenv('CC', 'gcc')
         super(CCode, self).__init__(
@@ -160,7 +160,7 @@ class CXXCode(CodeBase):
     EXTENSIONS = ['cc', 'cxx']
 
     def __init__(self, src_name, src_dir, out_dir,
-                 flags=['-std=c++11', '-O2']):
+                 flags=['-std=c++11', '-O2'], **kwargs):
         exe_name = os.path.splitext(src_name)[0] + consts.EXE_EXT
         cxx = os.getenv('CXX', 'g++')
         super(CXXCode, self).__init__(
@@ -176,7 +176,7 @@ class KotlinCode(CodeBase):
     EXTENSIONS = ['kt']
 
     def __init__(self, src_name, src_dir, out_dir,
-                 compile_flags=[], run_flags=[]):
+                 compile_flags=[], run_flags=[], **kwargs):
         kotlinc = 'kotlinc'
         kotlin = 'kotlin'
         mainclass = os.path.splitext(src_name)[0].capitalize() + 'Kt'
@@ -195,7 +195,7 @@ class JavaCode(CodeBase):
 
     def __init__(self, src_name, src_dir, out_dir,
                  compile_flags=[], run_flags=[],
-                 encoding='UTF-8', mainclass='Main'):
+                 encoding='UTF-8', mainclass='Main', **kwargs):
         java_home = os.getenv('JAVA_HOME')
         if java_home is not None:
             java = os.path.join(java_home, 'bin/java')
@@ -218,7 +218,7 @@ class RustCode(CodeBase):
     EXTENSIONS = ['rs']
 
     def __init__(self, src_name, src_dir, out_dir,
-                 flags=['-C', 'opt-level=2']):
+                 flags=['-C', 'opt-level=2'], **kwargs):
         exe_name = os.path.splitext(src_name)[0] + consts.EXE_EXT
         rustc = 'rustc'
         super(RustCode, self).__init__(
@@ -234,7 +234,7 @@ class ScriptCode(CodeBase):
     PREFIX = 'script'
     EXTENSIONS = ['sh', 'pl', 'py', 'rb']
 
-    def __init__(self, src_name, src_dir, out_dir, run_flags=[]):
+    def __init__(self, src_name, src_dir, out_dir, run_flags=[], **kwargs):
         super(ScriptCode, self).__init__(
             src_name=src_name, src_dir=src_dir, out_dir=out_dir,
             compile_args=[],
@@ -291,7 +291,7 @@ class JavaScriptCode(CodeBase):
     PREFIX = 'js'
     EXTENSIONS = ['js']
 
-    def __init__(self, src_name, src_dir, out_dir, run_flags=[]):
+    def __init__(self, src_name, src_dir, out_dir, run_flags=[], **kwargs):
         super(JavaScriptCode, self).__init__(
             src_name=src_name, src_dir=src_dir, out_dir=out_dir,
             compile_args=[],
@@ -312,7 +312,7 @@ class HaskellCode(CodeBase):
     PREFIX = 'hs'
     EXTENSIONS = ['hs']
 
-    def __init__(self, src_name, src_dir, out_dir, flags=[]):
+    def __init__(self, src_name, src_dir, out_dir, flags=[], **kwargs):
         exe_name = os.path.splitext(src_name)[0] + consts.EXE_EXT
         exe_path = os.path.join(out_dir, exe_name)
         super(HaskellCode, self).__init__(
@@ -327,7 +327,7 @@ class CsCode(CodeBase):
     PREFIX = 'cs'
     EXTENSIONS = ['cs']
 
-    def __init__(self, src_name, src_dir, out_dir, flags=[]):
+    def __init__(self, src_name, src_dir, out_dir, flags=[], **kwargs):
         exe_name = os.path.splitext(src_name)[0] + consts.EXE_EXT
         exe_path = os.path.join(out_dir, exe_name)
         super(CsCode, self).__init__(

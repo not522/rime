@@ -1,0 +1,6 @@
+{
+    "src":"main.cc",
+    "flags":["-O0"],
+    "challenge_cases":[],
+    "expected_verdicts":["AC", "TLE"]
+}

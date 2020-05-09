@@ -1,4 +1,5 @@
 import itertools
+import json
 
 from rime.basic import test
 from rime.basic.commands import submitter_registry
@@ -12,64 +13,40 @@ from rime.util import files
 class Solution(targets.TargetBase, problem.ProblemComponentMixin):
     """Solution target."""
 
-    CONFIG_FILENAME = 'SOLUTION'
+    CONFIG_FILENAME = 'solution.json'
 
     def __init__(self, name, base_dir, parent):
         assert isinstance(parent, problem.Problem)
         super(Solution, self).__init__(name, base_dir, parent)
         self.project = parent.project
         self.problem = parent
-        self.expected_verdicts = None
-        self.expected_score = None
         problem.ProblemComponentMixin.__init__(self)
 
     def PreLoad(self, ui):
-        self._codes = []
-        self.exports.update(
-            codes.CreateDictionary('%s_solution',
-                                   self._codes,
-                                   src_dir=self.src_dir,
-                                   out_dir=self.out_dir,
-                                   wrapper=self._WrapSolution))
+        with open(self.config_file) as f:
+            config = json.load(f)
 
-        def expected_verdicts(verdicts):
-            self.expected_verdicts = verdicts
-        self.exports['expected_verdicts'] = expected_verdicts
+        self.code = codes.AutoCode(
+            src_dir=self.src_dir, out_dir=self.out_dir, **config)
+        self.challenge_cases = config.get('challenge_cases')
 
-        self.exports['AC'] = test.TestCaseResult.AC
-        self.exports['WA'] = test.TestCaseResult.WA
-        self.exports['TLE'] = test.TestCaseResult.TLE
-        self.exports['RE'] = test.TestCaseResult.RE
+        expected_verdicts = config.get('expected_verdicts', [])
+        self.expected_verdicts = []
+        if 'AC' in expected_verdicts:
+            self.expected_verdicts.append(test.TestCaseResult.AC)
+        if 'WA' in expected_verdicts:
+            self.expected_verdicts.append(test.TestCaseResult.WA)
+        if 'TLE' in expected_verdicts:
+            self.expected_verdicts.append(test.TestCaseResult.TLE)
+        if 'RE' in expected_verdicts:
+            self.expected_verdicts.append(test.TestCaseResult.RE)
+        if self.expected_verdicts == []:
+            self.expected_verdicts = None
 
-        def expected_score(score):
-            self.expected_score = score
-        self.exports['expected_score'] = expected_score
-
-    def _WrapSolution(self, code_class):
-        def Wrapped(src_name, src_dir, out_dir, challenge_cases=None,
-                    *args, **kwargs):
-            code = code_class(src_name, src_dir, out_dir, *args, **kwargs)
-            self.challenge_cases = challenge_cases
-            return code
-        return Wrapped
+        self.expected_score = config.get('expected_score')
 
     def PostLoad(self, ui):
-        if len(self._codes) == 0:
-            self._CompatGuessSolution(ui)
-        if len(self._codes) >= 2:
-            raise targets.ConfigurationError('multiple solutions')
-        if len(self._codes) == 0:
-            raise targets.ConfigurationError('no solution definition found')
-        self.code = self._codes[0]
-
-    def _CompatGuessSolution(self, ui):
-        wrapped_auto_code = self._WrapSolution(codes.AutoCode)
-        for filename in files.ListDir(self.src_dir):
-            try:
-                code = wrapped_auto_code(filename, self.src_dir, self.out_dir)
-                self._codes.append(code)
-            except codes.UnknownCodeExtensionException:
-                continue
+        pass
 
     def IsCorrect(self):
         """Returns whether this is correct solution."""
