@@ -178,10 +178,19 @@ class SubtaskTestCase(test.TestCase):
         return None
 
 
+class CasenumReplaceConfig(object):
+    def __init__(self, case_pattern, case_replace):
+        self.case_pattern = case_pattern
+        self.case_replace = case_replace
+
+    def __call__(self, i, src):
+        return src.replace(self.case_pattern, self.case_replace.format(i))
+
+
 class Testset(targets.TargetBase, problem.ProblemComponentMixin):
     """Testset target."""
 
-    CONFIG_FILENAME = 'TESTSET'
+    CONFIG_FILENAME = 'testset.json'
 
     def __init__(self, name, base_dir, parent):
         assert isinstance(parent, problem.Problem)
@@ -198,12 +207,6 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
             self.exports['{0}_reactive_runner'.format(
                 reactive_runner.PREFIX)] = reactive_runner()
 
-        self.test_merger = None
-        self.merged_testcases = []
-
-        self.subtask_testcases = []
-        self.scoring_judge = False
-
         self.aoj_pack_dir = os.path.join(self.problem.out_dir, 'aoj')
         self.atcoder_pack_dir = os.path.join(self.problem.out_dir, 'atcoder')
         self.pack_dir = os.path.join(self.problem.out_dir, 'hacker_rank')
@@ -218,69 +221,58 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
         return testset
 
     def PreLoad(self, ui):
+        with open(self.config_file) as f:
+            config = json.load(f)
+
         self.generators = []
         self.validators = []
         self.judges = []
         self.reactives = []
-        self.exports.update(
-            core_codes.CreateDictionary('%s_generator', self.generators,
-                                        src_dir=self.src_dir,
-                                        out_dir=self.out_dir,
-                                        wrapper=self._WrapDependency))
-        self.exports.update(
-            core_codes.CreateDictionary('%s_validator', self.validators,
-                                        src_dir=self.src_dir,
-                                        out_dir=self.out_dir,
-                                        wrapper=self._WrapDependency))
-        self.exports.update(
-            core_codes.CreateDictionary('%s_judge', self.judges,
-                                        src_dir=self.src_dir,
-                                        out_dir=self.out_dir,
-                                        wrapper=self._WrapDependency))
-        self.exports.update(
-            core_codes.CreateDictionary('%s_reactive', self.reactives,
-                                        src_dir=self.src_dir,
-                                        out_dir=self.out_dir,
-                                        wrapper=self._WrapDependency))
 
-        for test_merger in test_merger_registry.classes.values():
-            # to make a new environment
-            def Closure(test_merger):
-                def Registerer(*args, **kwargs):
-                    if self.test_merger:
-                        raise RuntimeError('Multiple test merger registered.')
-                    self.test_merger = test_merger(*args, **kwargs)
-                self.exports['{0}_merger'.format(
-                    test_merger.PREFIX)] = Registerer
-            Closure(test_merger)
+        for generator in config['generator']:
+            self.generators.append(core_codes.AutoCode(
+                src_dir=self.src_dir, out_dir=self.out_dir, **generator))
 
-        def casenum_replace(case_pattern, case_replace):
-            return lambda i, src: src.replace(
-                case_pattern, case_replace.format(i))
-        self.exports['casenum_replace'] = casenum_replace
+        for generator in config['validator']:
+            self.validators.append(core_codes.AutoCode(
+                src_dir=self.src_dir, out_dir=self.out_dir, **generator))
 
-        def merged_testset(name, input_pattern):
-            self.merged_testcases.append(
-                MergedTestCase(self, name, input_pattern))
-        self.exports['merged_testset'] = merged_testset
+        for generator in config.get('judge', []):
+            self.judges.append(core_codes.AutoCode(
+                src_dir=self.src_dir, out_dir=self.out_dir, **generator))
 
-        def subtask_testset(name, score=100, input_patterns=['*']):
-            self.subtask_testcases.append(SubtaskTestCase(
-                self, name, score, input_patterns))
-        self.exports['subtask_testset'] = subtask_testset
+        for generator in config.get('reactive', []):
+            self.reactives.append(core_codes.AutoCode(
+                src_dir=self.src_dir, out_dir=self.out_dir, **generator))
 
-        def scoring_judge():
-            self.scoring_judge = True
-        self.exports['scoring_judge'] = scoring_judge
+        if 'test_merger' in config:
+            if config['test_merger']['kind'] == 'icpc':
+                self.test_merger = ICPCMerger(**config['test_merger'])
+            elif config['test_merger']['kind'] == 'gcj':
+                self.test_merger = GCJMerger(**config['test_merger'])
+            else:
+                assert False, 'Unkown test merger'
+        else:
+            self.test_merger = None
 
-    def _WrapDependency(self, code_class):
-        def Wrapped(src_name, src_dir, out_dir, dependency=[], variant=None,
-                    *args, **kwargs):
-            code = code_class(src_name, src_dir, out_dir, *args, **kwargs)
-            code.dependency = dependency
-            code.variant = variant
-            return code
-        return Wrapped
+        if 'casenum_replace' in config:
+            self.casenum_replace = CasenumReplaceConfig(
+                **config['casenum_replace'])
+        else:
+            self.casenum_replace = None
+
+        self.merged_testcases = []
+        if 'merged_testset' in config:
+            for merged_testset in config['merged_testset']:
+                self.merged_testcases.append(
+                    MergedTestCase(self, **config['merged_testset']))
+
+        self.subtask = []
+        if 'subtask' in config:
+            for subtask in config['subtask']:
+                self.subtask.append(SubtaskTestCase(self, **config['subtask']))
+
+        self.scoring_judge = config.get('scoring_judge', False)
 
     def PostLoad(self, ui):
         if not self.judges:
@@ -799,11 +791,11 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
                     True, detail=detail, allow_override=True)
         yield original_result
 
-        if self.subtask_testcases:
+        if self.subtask:
             max_score = 0
             min_score = 0
 
-            for subtask in self.subtask_testcases:
+            for subtask in self.subtask:
                 subtask_results = [
                     r for (t, r) in original_result.results.items()
                     if any([fnmatch.fnmatch(os.path.basename(t.infile),

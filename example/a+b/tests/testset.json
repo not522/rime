@@ -1,0 +1,8 @@
+{
+    "generator":[
+        {"src":"generator.py"}
+    ],
+    "validator":[
+        {"src":"validator.py"}
+    ]
+}
