@@ -1,3 +1,4 @@
+import json
 import os
 import os.path
 from subprocess import call
@@ -32,9 +33,6 @@ class TargetBase(object):
         self.config_file = os.path.join(base_dir, self.CONFIG_FILENAME)
 
         self.exports = {}
-        self.configs = {}
-
-        self._loaded = False
 
     def Load(self, ui):
         """Loads configurations and do setups.
@@ -42,19 +40,10 @@ class TargetBase(object):
         Raises:
           ConfigurationError: configuration is missing or incorrect.
         """
-        assert not self._loaded, 'TargetBase.Load() called twice!'
-        self._loaded = True
-
-        # Evaluate config.
         try:
-            script = files.ReadFile(self.config_file)
-        except IOError:
-            raise ConfigurationError('cannot read file: %s' % self.config_file)
-        try:
-            self.PreLoad(ui)
-            if self.config_file[-5:] != '.json':
-                code = compile(script, self.config_file, 'exec')
-                exec(code, self.exports, self.configs)
+            with open(self.config_file) as f:
+                config = json.load(f)
+            self.PreLoad(ui, config)
             self.PostLoad(ui)
         except Exception as e:
             # TODO(nya): print pretty file/lineno for debug

@@ -1,5 +1,4 @@
 import itertools
-import json
 
 from rime.basic import test
 from rime.basic.commands import submitter_registry
@@ -22,10 +21,7 @@ class Solution(targets.TargetBase, problem.ProblemComponentMixin):
         self.problem = parent
         problem.ProblemComponentMixin.__init__(self)
 
-    def PreLoad(self, ui):
-        with open(self.config_file) as f:
-            config = json.load(f)
-
+    def PreLoad(self, ui, config):
         self.code = codes.AutoCode(
             src_dir=self.src_dir, out_dir=self.out_dir, **config)
         self.challenge_cases = config.get('challenge_cases')

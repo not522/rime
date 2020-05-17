@@ -1,5 +1,4 @@
 import itertools
-import json
 import os.path
 
 from rime.basic import commands
@@ -30,7 +29,7 @@ class Problem(targets.TargetBase):
         self.problem = self
         self.out_dir = os.path.join(self.problem.base_dir, consts.RIME_OUT_DIR)
 
-    def PreLoad(self, ui):
+    def PreLoad(self, ui, config):
         if ui.options['rel_out_dir'] != "-":
             self.out_dir = os.path.join(
                 self.project.base_dir, ui.options['rel_out_dir'], self.name,
@@ -38,9 +37,6 @@ class Problem(targets.TargetBase):
         if ui.options['abs_out_dir'] != "-":
             self.out_dir = os.path.join(
                 ui.options['abs_out_dir'], self.name, consts.RIME_OUT_DIR)
-
-        with open(self.config_file) as f:
-            config = json.load(f)
 
         self.id = config.get('id', '')
         self.timeout = config['time_limit']

@@ -2,7 +2,6 @@ import codecs
 import getpass
 import hashlib
 import itertools
-import json
 import os
 import re
 import socket
@@ -125,10 +124,7 @@ class Project(targets.TargetBase):
         super(Project, self).__init__(name, base_dir, parent)
         self.project = self
 
-    def PreLoad(self, ui):
-        with open(self.config_file) as f:
-            config = json.load(f)
-
+    def PreLoad(self, ui, config):
         if 'library_dir' in config:
             self.library_dir = os.path.join(
                 self.base_dir, config['library_dir'])

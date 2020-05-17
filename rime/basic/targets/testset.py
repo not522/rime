@@ -220,10 +220,7 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
         testset.Load(ui)
         return testset
 
-    def PreLoad(self, ui):
-        with open(self.config_file) as f:
-            config = json.load(f)
-
+    def PreLoad(self, ui, config):
         self.generators = []
         self.validators = []
         self.judges = []
