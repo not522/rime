@@ -2,8 +2,8 @@ import itertools
 import os.path
 
 from rime.basic import commands
-from rime.basic import consts
 from rime.basic.targets import project
+from rime.core import consts
 from rime.core import targets
 from rime.core import taskgraph
 from rime.util import files

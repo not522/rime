@@ -10,9 +10,9 @@ import sys
 from six.moves import http_cookiejar
 from six.moves import urllib
 
-from rime.basic import codes as basic_codes
-from rime.basic import consts
 from rime.basic import test
+from rime.core import codes
+from rime.core import consts
 from rime.core import targets
 from rime.core import taskgraph
 from rime.util import files
@@ -324,7 +324,7 @@ class Project(targets.TargetBase):
         if need_custom_judge:
             custom_judges = [
                 judge for judge in problem.testset.judges
-                if judge.__class__ != basic_codes.InternalDiffCode]
+                if judge.__class__ != codes.InternalDiffCode]
             if custom_judges:
                 cell_judge = CELL_GOOD
             else:
@@ -567,7 +567,7 @@ class Project(targets.TargetBase):
         if need_custom_judge:
             custom_judges = [
                 judge for judge in problem.testset.judges
-                if judge.__class__ != basic_codes.InternalDiffCode]
+                if judge.__class__ != codes.InternalDiffCode]
             if custom_judges:
                 cell_judge = CELL_GOOD
             else:
@@ -788,7 +788,7 @@ class Project(targets.TargetBase):
         if need_custom_judge:
             custom_judges = [
                 judge for judge in problem.testset.judges
-                if judge.__class__ != basic_codes.InternalDiffCode]
+                if judge.__class__ != codes.InternalDiffCode]
             if custom_judges:
                 cell_judge = HTMLIFY_CELL_GOOD
             else:

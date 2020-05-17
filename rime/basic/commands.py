@@ -3,14 +3,14 @@ import os.path
 import re
 import time
 
-from rime.basic import codes as basic_codes
-from rime.basic import consts
 from rime.basic.targets import project
 from rime.basic.targets import problem
 from rime.basic.targets import solution
 from rime.basic.targets import testset
 from rime.basic.util import test_summary
+from rime.core import codes
 from rime.core import commands
+from rime.core import consts
 from rime.core import taskgraph
 from rime.util import class_registry
 from rime.util import files
@@ -342,7 +342,7 @@ class AOJPacker(PackerBase):
         # TODO(mizuno): reactive
         checker = testset.judges[0]
         if (len(testset.judges) == 1 and
-                not isinstance(checker, basic_codes.InternalDiffCode)):
+                not isinstance(checker, codes.InternalDiffCode)):
             ui.console.PrintAction(
                 'PACK', testset, 'checker files', progress=True)
             files.CopyFile(os.path.join(testset.src_dir, checker.src_name),
@@ -386,7 +386,7 @@ MEMORY_LIMIT = 32768
 # Date when the problem description will be able to be seen
 PUBLICATION_DATE = datetime.datetime(*, *, *, *, *)
 '''
-        if not isinstance(checker, basic_codes.InternalDiffCode):
+        if not isinstance(checker, codes.InternalDiffCode):
             files.WriteFile(
                 aoj_conf.format(
                     'JUDGE_TYPE = \'special-validator\'',
@@ -444,7 +444,7 @@ class AtCoderPacker(PackerBase):
         # checker
         checker = testset.judges[0]
         if (len(testset.judges) == 1 and
-                not isinstance(checker, basic_codes.InternalDiffCode)):
+                not isinstance(checker, codes.InternalDiffCode)):
             ui.console.PrintAction(
                 'PACK', testset, 'output checker files', progress=True)
             files.CopyFile(

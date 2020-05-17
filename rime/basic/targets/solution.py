@@ -22,7 +22,7 @@ class Solution(targets.TargetBase, problem.ProblemComponentMixin):
         problem.ProblemComponentMixin.__init__(self)
 
     def PreLoad(self, ui, config):
-        self.code = codes.AutoCode(
+        self.code = codes.get_code(
             src_dir=self.src_dir, out_dir=self.out_dir, **config)
         self.challenge_cases = config.get('challenge_cases')
 

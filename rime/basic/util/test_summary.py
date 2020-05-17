@@ -1,7 +1,7 @@
 import hashlib
 import os.path
 
-from rime.basic import consts
+from rime.core import consts
 from rime.util import files
 
 

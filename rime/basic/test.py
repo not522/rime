@@ -1,6 +1,6 @@
 import os.path
 
-from rime.basic import consts
+from rime.core import consts
 
 
 class TestVerdict(object):

@@ -4,12 +4,11 @@ import json
 import os.path
 import re
 
-from rime.basic import codes as basic_codes
 from rime.basic import commands as basic_commands
-from rime.basic import consts
 from rime.basic.targets import problem
 from rime.basic import test
-from rime.core import codes as core_codes
+from rime.core import codes
+from rime.core import consts
 from rime.core import targets
 from rime.core import taskgraph
 from rime.util import files
@@ -227,19 +226,19 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
         self.reactives = []
 
         for generator in config['generator']:
-            self.generators.append(core_codes.AutoCode(
+            self.generators.append(codes.get_code(
                 src_dir=self.src_dir, out_dir=self.out_dir, **generator))
 
         for generator in config['validator']:
-            self.validators.append(core_codes.AutoCode(
+            self.validators.append(codes.get_code(
                 src_dir=self.src_dir, out_dir=self.out_dir, **generator))
 
         for generator in config.get('judge', []):
-            self.judges.append(core_codes.AutoCode(
+            self.judges.append(codes.get_code(
                 src_dir=self.src_dir, out_dir=self.out_dir, **generator))
 
         for generator in config.get('reactive', []):
-            self.reactives.append(core_codes.AutoCode(
+            self.reactives.append(codes.get_code(
                 src_dir=self.src_dir, out_dir=self.out_dir, **generator))
 
         if 'test_merger' in config:
@@ -273,7 +272,7 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
 
     def PostLoad(self, ui):
         if not self.judges:
-            self.judges.append(basic_codes.InternalDiffCode())
+            self.judges.append(codes.InternalDiffCode())
 
     def GetLastModified(self):
         """Get timestamp of this target.
@@ -368,7 +367,7 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
         if not generator.QUIET_COMPILE:
             ui.console.PrintAction('COMPILE', self, generator.src_name)
         res = yield generator.Compile()
-        if res.status != core_codes.RunResult.OK:
+        if res.status != codes.RunResult.OK:
             ui.errors.Error(
                 self, '%s: Compile Error (%s)' %
                 (generator.src_name, res.status))
@@ -400,7 +399,7 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
         res = yield generator.Run(
             args=(), cwd=self.out_dir,
             input=os.devnull, output=os.devnull, timeout=None, precise=False)
-        if res.status != core_codes.RunResult.OK:
+        if res.status != codes.RunResult.OK:
             ui.errors.Error(self,
                             '%s: %s' % (generator.src_name, res.status))
             raise taskgraph.Bailout([False])
@@ -420,7 +419,7 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
         if not validator.QUIET_COMPILE:
             ui.console.PrintAction('COMPILE', self, validator.src_name)
         res = yield validator.Compile()
-        if res.status != core_codes.RunResult.OK:
+        if res.status != codes.RunResult.OK:
             ui.errors.Error(
                 self, '%s: Compile Error (%s)' %
                 (validator.src_name, res.status))
@@ -464,14 +463,14 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
             output=validationfile,
             timeout=None, precise=False,
             redirect_error=True)
-        if res.status == core_codes.RunResult.NG:
+        if res.status == codes.RunResult.NG:
             ui.errors.Error(
                 self, '%s: Validation Failed' %
                 os.path.basename(testcase.infile))
             log = files.ReadFile(validationfile)
             ui.console.PrintLog(log)
             raise taskgraph.Bailout([False])
-        elif res.status != core_codes.RunResult.OK:
+        elif res.status != codes.RunResult.OK:
             ui.errors.Error(self,
                             '%s: Validator Failed: %s' %
                             (os.path.basename(testcase.infile), res.status))
@@ -501,7 +500,7 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
         if not judge.QUIET_COMPILE:
             ui.console.PrintAction('COMPILE', self, judge.src_name)
         res = yield judge.Compile()
-        if res.status != core_codes.RunResult.OK:
+        if res.status != codes.RunResult.OK:
             ui.errors.Error(
                 self, '%s: Compile Error (%s)' % (judge.src_name, res.status))
             ui.console.PrintLog(judge.ReadCompileLog())
@@ -523,7 +522,7 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
         if not reactive.QUIET_COMPILE:
             ui.console.PrintAction('COMPILE', self, reactive.src_name)
         res = yield reactive.Compile()
-        if res.status != core_codes.RunResult.OK:
+        if res.status != codes.RunResult.OK:
             ui.errors.Error(self, '%s: Compile Error (%s)'
                             % (reactive.src_name, res.status))
             ui.console.PrintLog(reactive.ReadCompileLog())
@@ -572,7 +571,7 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
                 input=testcase.infile,
                 output=testcase.difffile,
                 timeout=None, precise=False)
-        if res.status != core_codes.RunResult.OK:
+        if res.status != codes.RunResult.OK:
             ui.errors.Error(reference_solution, res.status)
             raise taskgraph.Bailout([False])
         ui.console.PrintAction('REFRUN', reference_solution,
@@ -1074,10 +1073,10 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
                 input=testcase.infile,
                 output=outfile,
                 timeout=testcase.timeout, precise=precise)
-        if res.status == core_codes.RunResult.TLE:
+        if res.status == codes.RunResult.TLE:
             yield test.TestCaseResult(
                 solution, test.TestCaseResult.TLE, time=None, cached=False)
-        if res.status != core_codes.RunResult.OK:
+        if res.status != codes.RunResult.OK:
             yield test.TestCaseResult(
                 solution, test.TestCaseResult.RE, time=None, cached=False)
 
@@ -1092,10 +1091,10 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
                 outfile=outfile,
                 cwd=self.out_dir,
                 judgefile=judgefile)
-            if res.status == core_codes.RunResult.NG:
+            if res.status == codes.RunResult.NG:
                 yield test.TestCaseResult(
                     solution, test.TestCaseResult.WA, time=None, cached=False)
-            elif res.status != core_codes.RunResult.OK:
+            elif res.status != codes.RunResult.OK:
                 yield test.TestCaseResult(
                     solution, test.TestVerdict('Validator %s' % res.status),
                     time=None, cached=False)
@@ -1128,7 +1127,7 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
             output=validationfile,
             timeout=None, precise=False,
             redirect_error=True)
-        if res.status == core_codes.RunResult.OK:
+        if res.status == codes.RunResult.OK:
             ui.errors.Error(self,
                             '%s: Unexpectedly Validator Accepted: %s' %
                             (os.path.basename(testcase.infile), res.status))
