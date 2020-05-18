@@ -11,6 +11,7 @@ from six.moves import http_cookiejar
 from six.moves import urllib
 
 from rime.basic import test
+from rime.basic.targets.problem import Problem
 from rime.core import codes
 from rime.core import consts
 from rime.core import targets
@@ -104,14 +105,27 @@ class WikifyConfig(object):
         self.password = config.get('password')
 
 
-class AtCoderConfig(object):
+class JudgeSystem(object):
     def __init__(self, config):
-        self.upload_script = config['upload_script']
-        self.url = config['url']
-        self.username = config['username']
-        self.password = config['password']
-        self.lang_ids = config['lang_ids']
-        self.logined = False
+        if config is not None:
+            self.name = config['name']
+        else:
+            self.name = None
+
+        if self.name == 'AOJ':
+            pass
+        elif self.name == 'AtCoder':
+            self.upload_script = config['upload_script']
+            self.url = config['url']
+            self.username = config['username']
+            self.password = config['password']
+            self.lang_ids = config['lang_ids']
+            self.logined = False
+        elif self.name == 'HackerRank':
+            pass
+        elif self.name is not None:
+            raise targets.ConfigurationError(
+                'Unknown judge system: {}'.format(self.name))
 
 
 class Project(targets.TargetBase):
@@ -136,10 +150,7 @@ class Project(targets.TargetBase):
         else:
             self.wikify_config = None
 
-        if 'atcoder_config' in config:
-            self.atcoder_config = AtCoderConfig(config['atcoder_config'])
-        else:
-            self.atcoder_config = None
+        self.judge_system = JudgeSystem(config.get('judge_system'))
 
     def PostLoad(self, ui):
         self._ChainLoad(ui)
@@ -149,8 +160,8 @@ class Project(targets.TargetBase):
         self.problems = []
         for name in files.ListDir(self.base_dir):
             path = os.path.join(self.base_dir, name)
-            if targets.registry.Problem.CanLoadFrom(path):
-                problem = targets.registry.Problem(name, path, self)
+            if Problem.CanLoadFrom(path):
+                problem = Problem(name, path, self)
                 try:
                     problem.Load(ui)
                     self.problems.append(problem)
@@ -189,8 +200,8 @@ class Project(targets.TargetBase):
 
     @taskgraph.task_method
     def Upload(self, ui):
-        if self.atcoder_config is not None:
-            script = os.path.join(self.atcoder_config.upload_script)
+        if self.judge_system.name == 'AtCoder':
+            script = os.path.join(self.judge_system.upload_script)
             if not os.path.exists(os.path.join(self.base_dir, script)):
                 ui.errors.Error(self, script + ' is not found.')
                 yield False
@@ -202,15 +213,15 @@ class Project(targets.TargetBase):
     def _Request(self, path, data=None):
         if type(data) == dict:
             data = urllib.parse.urlencode(data).encode('utf-8')
-        req = urllib.request.Request(self.atcoder_config.url + path, data)
+        req = urllib.request.Request(self.judge_system.url + path, data)
         return opener.open(req)
 
     def _Login(self):
-        if not self.atcoder_config.logined:
+        if not self.judge_system.logined:
             self._Request('login',
-                          {'name': self.atcoder_config.username,
-                           'password': self.atcoder_config.password})
-            self.atcoder_config.logined = True
+                          {'name': self.judge_system.username,
+                           'password': self.judge_system.password})
+            self.judge_system.logined = True
 
     @taskgraph.task_method
     def Submit(self, ui):
@@ -818,6 +829,3 @@ class Project(targets.TargetBase):
         results = yield taskgraph.TaskBranch(
             [problem.Clean(ui) for problem in self.problems])
         yield all(results)
-
-
-targets.registry.Add(Project)

@@ -1,15 +1,16 @@
 import itertools
 
 from rime.basic import test
-from rime.basic.commands import submitter_registry
+from rime.basic.problem_component_mixin import ProblemComponentMixin
 from rime.basic.targets import problem
+from rime.core.commands import AtCoderSubmitter
 from rime.core import codes
 from rime.core import targets
 from rime.core import taskgraph
 from rime.util import files
 
 
-class Solution(targets.TargetBase, problem.ProblemComponentMixin):
+class Solution(targets.TargetBase, ProblemComponentMixin):
     """Solution target."""
 
     CONFIG_FILENAME = 'solution.json'
@@ -19,7 +20,7 @@ class Solution(targets.TargetBase, problem.ProblemComponentMixin):
         super(Solution, self).__init__(name, base_dir, parent)
         self.project = parent.project
         self.problem = parent
-        problem.ProblemComponentMixin.__init__(self)
+        ProblemComponentMixin.__init__(self)
 
     def PreLoad(self, ui, config):
         self.code = codes.get_code(
@@ -90,10 +91,9 @@ class Solution(targets.TargetBase, problem.ProblemComponentMixin):
     def Submit(self, ui):
         if not (yield self.Build(ui)):
             yield False
-        if len(submitter_registry.classes) > 0:
+        if self.project.judge_system.name == 'AtCoder':
             results = yield taskgraph.TaskBranch(
-                [submitter().Submit(ui, self) for submitter
-                 in submitter_registry.classes.values()])
+                [AtCoderSubmitter().Submit(ui, self)])
             yield all(results)
         else:
             ui.errors.Error(self, "Submit nothing.")
@@ -108,6 +108,3 @@ class Solution(targets.TargetBase, problem.ProblemComponentMixin):
             ui.errors.Exception(self, e)
             yield False
         yield True
-
-
-targets.registry.Add(Solution)

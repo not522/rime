@@ -1,8 +1,9 @@
 import itertools
 import os.path
 
-from rime.basic import commands
-from rime.basic.targets import project
+from rime.basic.targets.solution import Solution
+from rime.basic.targets.testset import Testset
+from rime.core.commands import AtCoderUploader
 from rime.core import consts
 from rime.core import targets
 from rime.core import taskgraph
@@ -23,7 +24,6 @@ class Problem(targets.TargetBase):
     CONFIG_FILENAME = 'problem.json'
 
     def __init__(self, name, base_dir, parent):
-        assert isinstance(parent, project.Project)
         super(Problem, self).__init__(name, base_dir, parent)
         self.project = parent
         self.problem = self
@@ -58,8 +58,8 @@ class Problem(targets.TargetBase):
         self.solutions = []
         for name in sorted(files.ListDir(self.base_dir)):
             path = os.path.join(self.base_dir, name)
-            if targets.registry.Solution.CanLoadFrom(path):
-                solution = targets.registry.Solution(name, path, self)
+            if Solution.CanLoadFrom(path):
+                solution = Solution(name, path, self)
                 try:
                     solution.Load(ui)
                     self.solutions.append(solution)
@@ -69,8 +69,8 @@ class Problem(targets.TargetBase):
         self.testsets = []
         for name in sorted(files.ListDir(self.base_dir)):
             path = os.path.join(self.base_dir, name)
-            if targets.registry.Testset.CanLoadFrom(path):
-                testset = targets.registry.Testset(name, path, self)
+            if Testset.CanLoadFrom(path):
+                testset = Testset(name, path, self)
                 try:
                     testset.Load(ui)
                     self.testsets.append(testset)
@@ -83,7 +83,7 @@ class Problem(targets.TargetBase):
         if len(self.testsets) >= 2:
             ui.errors.Error(self, 'Multiple testsets found')
         elif len(self.testsets) == 0:
-            self.testset = targets.registry.Testset.CreateEmpty(self, ui)
+            self.testset = Testset.CreateEmpty(self, ui)
         elif len(self.testsets) == 1:
             self.testset = self.testsets[0]
 
@@ -158,10 +158,9 @@ class Problem(targets.TargetBase):
     def Upload(self, ui):
         if not (yield self.Pack(ui)):
             yield False
-        if len(commands.uploader_registry.classes) > 0:
+        if self.project.judge_system.name == 'AtCoder':
             results = yield taskgraph.TaskBranch(
-                [uploader().Upload(ui, self, not ui.options['upload'])
-                 for uploader in commands.uploader_registry.classes.values()])
+                [AtCoderUploader().Upload(ui, self, not ui.options['upload'])])
             yield all(results)
         else:
             ui.errors.Error(self, "Upload nothing.")
@@ -287,47 +286,3 @@ id='{0}'
                 ui.errors.Exception(self)
                 success = False
         yield success
-
-
-class ProblemComponentMixin(object):
-    """Mix-in for components of a problem (solution, testset)."""
-
-    def __init__(self):
-        self.src_dir = self.base_dir
-        assert self.src_dir.startswith(self.base_dir)
-        rel_dir = self.src_dir[len(self.problem.base_dir) + 1:]
-        self.out_dir = os.path.join(self.problem.out_dir, rel_dir)
-        self.stamp_file = os.path.join(self.out_dir, consts.STAMP_FILE)
-
-    def GetLastModified(self):
-        """Get timestamp of this target."""
-        stamp = files.GetLastModifiedUnder(self.src_dir)
-        if self.project.library_dir is not None:
-            stamp = max(stamp, files.GetLastModifiedUnder(
-                self.project.library_dir))
-        return stamp
-
-    def SetCacheStamp(self, ui):
-        """Update the stamp file."""
-        try:
-            files.CreateEmptyFile(self.stamp_file)
-            return True
-        except Exception:
-            ui.errors.Exception(self)
-            return False
-
-    def GetCacheStamp(self):
-        """Get timestamp of the stamp file.
-
-        Returns datetime.datetime.min if not available.
-        """
-        return files.GetModified(self.stamp_file)
-
-    def IsBuildCached(self):
-        """Check if cached build is not staled."""
-        src_mtime = self.GetLastModified()
-        stamp_mtime = self.GetCacheStamp()
-        return (src_mtime < stamp_mtime)
-
-
-targets.registry.Add(Problem)

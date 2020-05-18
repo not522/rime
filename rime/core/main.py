@@ -11,12 +11,14 @@ from rime.core import ui as ui_mod
 from rime.util import console as console_mod
 from rime.util import module_loader
 
+from rime.basic.targets.project import Project
+
 
 def LoadRequiredModules():
     # TODO(nya): Fix this hacky implementation.
     module_loader.LoadPackage('rime.basic')
     while True:
-        commands = commands_mod.GetCommands()
+        commands = commands_mod.get_commands()
         default_options = commands[None].GetDefaultOptionDict()
         null_console = console_mod.NullConsole()
         fake_ui = ui_mod.UiContext(
@@ -44,12 +46,12 @@ def LoadProject(cwd, ui):
     If PROJECT cannot be found, return None.
     """
     path = cwd
-    while not targets.registry.Project.CanLoadFrom(path):
+    while not Project.CanLoadFrom(path):
         head, _ = os.path.split(path)
         if head == path:
             return None
         path = head
-    project = targets.registry.Project(None, path, None)
+    project = Project(None, path, None)
     try:
         project.Load(ui)
         return project
@@ -64,7 +66,7 @@ def InternalMain(argv):
 
     console = console_mod.TtyConsole(sys.stdout)
 
-    commands = commands_mod.GetCommands()
+    commands = commands_mod.get_commands()
 
     # Parse arguments.
     try:

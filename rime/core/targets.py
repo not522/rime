@@ -3,7 +3,6 @@ import os
 import os.path
 from subprocess import call
 
-from rime.util import class_registry
 from rime.util import files
 
 
@@ -74,6 +73,3 @@ def EditFile(filename, initial):
     EDITOR = os.environ.get('EDITOR', 'vi')
     files.WriteFile(initial, filename)
     call([EDITOR, filename])
-
-
-registry = class_registry.ClassRegistry(TargetBase)

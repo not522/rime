@@ -4,15 +4,15 @@ import json
 import os.path
 import re
 
-from rime.basic import commands as basic_commands
+from rime.basic.problem_component_mixin import ProblemComponentMixin
 from rime.basic.targets import problem
 from rime.basic import test
 from rime.core import codes
+from rime.core import commands
 from rime.core import consts
 from rime.core import targets
 from rime.core import taskgraph
 from rime.util import files
-from rime.util import class_registry
 
 
 class JudgeRunner(object):
@@ -48,11 +48,6 @@ class TestlibJudgeRunner(JudgeRunner):
             redirect_error=True)  # !redirect_error
 
 
-judge_runner_registry = class_registry.ClassRegistry(JudgeRunner)
-judge_runner_registry.Add(RimeJudgeRunner)
-judge_runner_registry.Add(TestlibJudgeRunner)
-
-
 class ReactiveRunner(object):
     def Run(self, reactive, solution, args, cwd, input, output, timeout,
             precise):
@@ -71,10 +66,6 @@ class KUPCReactiveRunner(ReactiveRunner):
             timeout=timeout,
             precise=precise,
             redirect_error=True)  # !redirect_error
-
-
-reactive_runner_registry = class_registry.ClassRegistry(ReactiveRunner)
-reactive_runner_registry.Add(KUPCReactiveRunner)
 
 
 consts.IN_ORIGINAL_EXT = '.in_orig'
@@ -145,11 +136,6 @@ class GCJMerger(TestMerger):
                 f.write(files.ReadFile(src))
 
 
-test_merger_registry = class_registry.ClassRegistry(TestMerger)
-test_merger_registry.Add(ICPCMerger)
-test_merger_registry.Add(GCJMerger)
-
-
 class MergedTestCase(test.TestCase):
     def __init__(self, testset, name, input_pattern):
         super(MergedTestCase, self).__init__(
@@ -186,7 +172,7 @@ class CasenumReplaceConfig(object):
         return src.replace(self.case_pattern, self.case_replace.format(i))
 
 
-class Testset(targets.TargetBase, problem.ProblemComponentMixin):
+class Testset(targets.TargetBase, ProblemComponentMixin):
     """Testset target."""
 
     CONFIG_FILENAME = 'testset.json'
@@ -196,15 +182,16 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
         super(Testset, self).__init__(name, base_dir, parent)
         self.project = parent.project
         self.problem = parent
-        problem.ProblemComponentMixin.__init__(self)
+        ProblemComponentMixin.__init__(self)
 
-        for judge_runner in judge_runner_registry.classes.values():
-            self.exports['{0}_judge_runner'.format(
-                judge_runner.PREFIX)] = judge_runner()
+        # TODO(mizuno): activate them.
+        # self.exports['rime_judge_runner'] = RimeJudgeRunner()
+        # self.exports['testlib_judge_runner'] = TestlibJudgeRunner()
 
-        for reactive_runner in reactive_runner_registry.classes.values():
-            self.exports['{0}_reactive_runner'.format(
-                reactive_runner.PREFIX)] = reactive_runner()
+        # self.exports['kupc_reactive_runner'] = KUPCReactiveRunner()
+
+        # self.exports['icpc_merger'] = ICPCMerger()
+        # self.exports['gcj_merger'] = GCJMerger()
 
         self.aoj_pack_dir = os.path.join(self.problem.out_dir, 'aoj')
         self.atcoder_pack_dir = os.path.join(self.problem.out_dir, 'atcoder')
@@ -279,7 +266,7 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
 
         Testsets depend on reference solution.
         """
-        stamp = problem.ProblemComponentMixin.GetLastModified(self)
+        stamp = ProblemComponentMixin.GetLastModified(self)
         if self.problem.reference_solution:
             stamp = max(
                 stamp, self.problem.reference_solution.GetLastModified())
@@ -1142,10 +1129,17 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
     def Pack(self, ui):
         if not (yield self.Build(ui)):
             yield False
-        if len(basic_commands.packer_registry.classes) > 0:
+        if self.project.judge_system.name == 'AOJ':
             results = yield taskgraph.TaskBranch(
-                [packer().Pack(ui, self) for packer
-                 in basic_commands.packer_registry.classes.values()])
+                [commands.AOJPacker().Pack(ui, self)])
+            yield all(results)
+        elif self.project.judge_system.name == 'AtCoder':
+            results = yield taskgraph.TaskBranch(
+                [commands.AtCoderPacker().Pack(ui, self)])
+            yield all(results)
+        elif self.project.judge_system.name == 'HackerRank':
+            results = yield taskgraph.TaskBranch(
+                [commands.HackerRankPacker().Pack(ui, self)])
             yield all(results)
         else:
             ui.errors.Error(self, "Pack nothing.")
@@ -1160,6 +1154,3 @@ class Testset(targets.TargetBase, problem.ProblemComponentMixin):
         except Exception:
             ui.errors.Exception(self)
         yield True
-
-
-targets.registry.Add(Testset)
