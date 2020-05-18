@@ -9,26 +9,8 @@ from rime.core import targets
 from rime.core import taskgraph
 from rime.core import ui as ui_mod
 from rime.util import console as console_mod
-from rime.util import module_loader
 
 from rime.basic.targets.project import Project
-
-
-def LoadRequiredModules():
-    # TODO(nya): Fix this hacky implementation.
-    module_loader.LoadPackage('rime.basic')
-    while True:
-        commands = commands_mod.get_commands()
-        default_options = commands[None].GetDefaultOptionDict()
-        null_console = console_mod.NullConsole()
-        fake_ui = ui_mod.UiContext(
-            default_options, null_console, commands)
-        try:
-            LoadProject(os.getcwd(), fake_ui)
-            break
-        except targets.ConfigurationError:
-            # Configuration errors should be processed later.
-            break
 
 
 def CheckSystem(ui):
@@ -62,8 +44,6 @@ def LoadProject(cwd, ui):
 
 def InternalMain(argv):
     """Main method called when invoked as stand-alone script."""
-    LoadRequiredModules()
-
     console = console_mod.TtyConsole(sys.stdout)
 
     commands = commands_mod.get_commands()
