@@ -1,12 +1,12 @@
 import itertools
 import os.path
 
-from rime.basic.targets.solution import Solution
-from rime.basic.targets.testset import Testset
-from rime.core.commands import AtCoderUploader
-from rime.core import consts
-from rime.core import targets
-from rime.core import taskgraph
+from rime.commands import AtCoderUploader
+from rime import consts
+from rime import target
+from rime import taskgraph
+from rime.targets.solution import Solution
+from rime.targets.testset import Testset
 from rime.util import files
 
 
@@ -18,7 +18,7 @@ class WikifyConfig(object):
         self.need_custom_judge = config.get('need_custom_judge', False)
 
 
-class Problem(targets.TargetBase):
+class Problem(target.TargetBase):
     """Problem target."""
 
     CONFIG_FILENAME = 'problem.json'
@@ -63,7 +63,7 @@ class Problem(targets.TargetBase):
                 try:
                     solution.Load(ui)
                     self.solutions.append(solution)
-                except targets.ConfigurationError:
+                except target.ConfigurationError:
                     ui.errors.Exception(solution)
         # Chain-load testsets.
         self.testsets = []
@@ -74,7 +74,7 @@ class Problem(targets.TargetBase):
                 try:
                     testset.Load(ui)
                     self.testsets.append(testset)
-                except targets.ConfigurationError:
+                except target.ConfigurationError:
                     ui.errors.Exception(testset)
 
     def _ParseSettings(self, ui):
@@ -212,7 +212,7 @@ class Problem(targets.TargetBase):
                 ui.errors.Error(self, "{0} already exists.".format(newdir))
                 yield None
             os.makedirs(newdir)
-            targets.EditFile(os.path.join(newdir, 'SOLUTION'), content)
+            target.EditFile(os.path.join(newdir, 'SOLUTION'), content)
             ui.console.PrintAction('ADD', None, '%s/SOLUTION' % newdir)
         elif ttype == 'testset':
             content = '''\
@@ -265,8 +265,8 @@ id='{0}'
                 ui.errors.Error(self, "{0} already exists.".format(newdir))
                 yield None
             os.makedirs(newdir)
-            targets.EditFile(os.path.join(newdir, 'TESTSET'),
-                             content.format(self.id))
+            target.EditFile(os.path.join(newdir, 'TESTSET'),
+                            content.format(self.id))
             ui.console.PrintAction('ADD', self, '%s/TESTSET' % newdir)
         else:
             ui.errors.Error(self,

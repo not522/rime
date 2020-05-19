@@ -4,13 +4,13 @@ import platform
 import sys
 import traceback
 
-from rime.core import commands as commands_mod
-from rime.core import targets
-from rime.core import taskgraph
-from rime.core import ui as ui_mod
+from rime import commands as commands_mod
+from rime import targets
+from rime import taskgraph
+from rime import ui as ui_mod
 from rime.util import console as console_mod
 
-from rime.basic.targets.project import Project
+from rime.targets.project import Project
 
 
 def CheckSystem(ui):

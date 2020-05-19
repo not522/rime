@@ -1,16 +1,16 @@
 import itertools
 
-from rime.basic import test
-from rime.basic.problem_component_mixin import ProblemComponentMixin
-from rime.basic.targets import problem
-from rime.core.commands import AtCoderSubmitter
-from rime.core import codes
-from rime.core import targets
-from rime.core import taskgraph
+from rime.commands import AtCoderSubmitter
+from rime import codes
+from rime import target
+from rime import taskgraph
+from rime import test
+from rime.targets.problem_component_mixin import ProblemComponentMixin
+from rime.targets import problem
 from rime.util import files
 
 
-class Solution(targets.TargetBase, ProblemComponentMixin):
+class Solution(target.TargetBase, ProblemComponentMixin):
     """Solution target."""
 
     CONFIG_FILENAME = 'solution.json'

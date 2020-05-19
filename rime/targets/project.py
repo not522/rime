@@ -10,12 +10,12 @@ import sys
 from six.moves import http_cookiejar
 from six.moves import urllib
 
-from rime.basic import test
-from rime.basic.targets.problem import Problem
-from rime.core import codes
-from rime.core import consts
-from rime.core import targets
-from rime.core import taskgraph
+from rime import codes
+from rime import consts
+from rime import target
+from rime import taskgraph
+from rime import test
+from rime.targets.problem import Problem
 from rime.util import files
 
 if sys.version_info[0] == 2:
@@ -124,11 +124,11 @@ class JudgeSystem(object):
         elif self.name == 'HackerRank':
             pass
         elif self.name is not None:
-            raise targets.ConfigurationError(
+            raise target.ConfigurationError(
                 'Unknown judge system: {}'.format(self.name))
 
 
-class Project(targets.TargetBase):
+class Project(target.TargetBase):
     """Project target."""
 
     CONFIG_FILENAME = 'project.json'
@@ -165,7 +165,7 @@ class Project(targets.TargetBase):
                 try:
                     problem.Load(ui)
                     self.problems.append(problem)
-                except targets.ConfigurationError:
+                except target.ConfigurationError:
                     ui.errors.Exception(problem)
         self.problems.sort(key=lambda a: (a.id, a.name))
 
@@ -246,7 +246,7 @@ class Project(targets.TargetBase):
                 ui.errors.Error(self, "{0} already exists.".format(newdir))
                 yield None
             os.makedirs(newdir)
-            targets.EditFile(os.path.join(newdir, 'PROBLEM'), content)
+            target.EditFile(os.path.join(newdir, 'PROBLEM'), content)
             ui.console.PrintAction('ADD', None, '%s/PROBLEM' % newdir)
         else:
             ui.errors.Error(self,

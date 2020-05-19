@@ -4,14 +4,14 @@ import json
 import os.path
 import re
 
-from rime.basic.problem_component_mixin import ProblemComponentMixin
-from rime.basic.targets import problem
-from rime.basic import test
-from rime.core import codes
-from rime.core import commands
-from rime.core import consts
-from rime.core import targets
-from rime.core import taskgraph
+from rime import codes
+from rime import commands
+from rime import consts
+from rime import target
+from rime import taskgraph
+from rime import test
+from rime.targets.problem_component_mixin import ProblemComponentMixin
+from rime.targets import problem
 from rime.util import files
 
 
@@ -172,7 +172,7 @@ class CasenumReplaceConfig(object):
         return src.replace(self.case_pattern, self.case_replace.format(i))
 
 
-class Testset(targets.TargetBase, ProblemComponentMixin):
+class Testset(target.TargetBase, ProblemComponentMixin):
     """Testset target."""
 
     CONFIG_FILENAME = 'testset.json'

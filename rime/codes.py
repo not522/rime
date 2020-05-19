@@ -4,8 +4,8 @@ import os.path
 import signal
 import subprocess
 
-from rime.core import consts
-from rime.core import taskgraph
+from rime import consts
+from rime import taskgraph
 from rime.util import files
 
 

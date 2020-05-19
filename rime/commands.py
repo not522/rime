@@ -4,10 +4,10 @@ import re
 import shutil
 import time
 
-from rime.core import codes
-from rime.core import consts
-from rime.core import taskgraph
-from rime.core import test_summary
+from rime import codes
+from rime import consts
+from rime import taskgraph
+from rime import test_summary
 from rime.util import files
 
 
