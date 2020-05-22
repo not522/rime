@@ -892,7 +892,7 @@ class Clean(CommandBase):
             parent)
 
     def Run(self, project, args, ui):
-        return RunCommon('Clean', project, args, ui)
+        return RunCommon('clean', project, args, ui)
 
 
 class Help(CommandBase):

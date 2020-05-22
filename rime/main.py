@@ -83,7 +83,7 @@ def InternalMain(argv):
     task = None
     try:
         task = cmd.Run(project, tuple(args), ui)
-        if task:
+        if task and not isinstance(cmd, commands_mod.Clean):
             graph.Run(task)
     except KeyboardInterrupt:
         if ui.options['debug'] >= 1:

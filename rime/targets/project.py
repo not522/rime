@@ -823,9 +823,7 @@ class Project(target.TargetBase):
         else:
             return HTMLIFY_BGCOLOR_GOOD + '%.2fs' % (time)
 
-    @taskgraph.task_method
-    def Clean(self, ui):
+    def clean(self, ui):
         """Clean the project."""
-        results = yield taskgraph.TaskBranch(
-            [problem.Clean(ui) for problem in self.problems])
-        yield all(results)
+        results = [problem.clean(ui) for problem in self.problems]
+        return all(results)

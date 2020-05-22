@@ -99,12 +99,11 @@ class Solution(target.TargetBase, ProblemComponentMixin):
             ui.errors.Error(self, "Submit nothing.")
             yield False
 
-    @taskgraph.task_method
-    def Clean(self, ui):
+    def clean(self, ui):
         """Clean the solution."""
         ui.console.PrintAction('CLEAN', self)
-        e = yield self.code.Clean()
+        e = self.code.clean()
         if e:
             ui.errors.Exception(self, e)
-            yield False
-        yield True
+            return False
+        return True

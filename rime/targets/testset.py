@@ -1145,12 +1145,12 @@ class Testset(target.TargetBase, ProblemComponentMixin):
             ui.errors.Error(self, "Pack nothing.")
             yield False
 
-    @taskgraph.task_method
-    def Clean(self, ui):
+    def clean(self, ui):
         """Clean the testset."""
         ui.console.PrintAction('CLEAN', self)
         try:
             files.RemoveTree(self.out_dir)
         except Exception:
             ui.errors.Exception(self)
-        yield True
+            return False
+        return True

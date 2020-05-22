@@ -274,15 +274,12 @@ id='{0}'
                                 ttype))
             yield None
 
-    @taskgraph.task_method
-    def Clean(self, ui):
+    def clean(self, ui):
         """Clean the problem."""
         ui.console.PrintAction('CLEAN', self)
-        success = True
-        if success:
-            try:
-                files.RemoveTree(self.out_dir)
-            except Exception:
-                ui.errors.Exception(self)
-                success = False
-        yield success
+        try:
+            files.RemoveTree(self.out_dir)
+        except Exception:
+            ui.errors.Exception(self)
+            return False
+        return True

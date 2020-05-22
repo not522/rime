@@ -119,8 +119,7 @@ class CodeBase(Code):
             result = RunResult('On execution: %s' % e, None)
         yield result
 
-    @taskgraph.task_method
-    def Clean(self):
+    def clean(self):
         """Cleans the output directory.
 
         Returns an exception object on error.
@@ -128,9 +127,9 @@ class CodeBase(Code):
         try:
             files.RemoveTree(self.out_dir)
         except Exception as e:
-            yield e
+            return e
         else:
-            yield None
+            return None
 
     def ReadCompileLog(self):
         return files.ReadFile(os.path.join(self.out_dir, self.log_name))
