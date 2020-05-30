@@ -5,6 +5,7 @@ import signal
 import subprocess
 
 from rime import consts
+from rime import task
 from rime import taskgraph
 from rime.util import files
 
@@ -178,19 +179,11 @@ class CodeBase(Code):
     @taskgraph.task_method
     def _ExecInternal(self, args, cwd, stdin, stdout, stderr,
                       timeout=None, precise=False):
-        task = taskgraph.ExternalProcessTask(
+        proc, time = task.run_subprocess(
             args, cwd=cwd, stdin=stdin, stdout=stdout, stderr=stderr,
-            timeout=timeout, exclusive=precise)
-        proc = yield task
+            timeout=timeout)
         code = proc.returncode
-        # Retry if TLE.
-        if not precise and code == -(signal.SIGXCPU):
-            self._ResetIO(stdin, stdout, stderr)
-            task = taskgraph.ExternalProcessTask(
-                args, cwd=cwd, stdin=stdin, stdout=stdout, stderr=stderr,
-                timeout=timeout, exclusive=precise)
-            proc = yield task
-            code = proc.returncode
+        # TODO(mizuno): Retry if TLE.
         if code == 0:
             status = RunResult.OK
         elif code == -(signal.SIGXCPU):
@@ -199,7 +192,7 @@ class CodeBase(Code):
             status = RunResult.RE
         else:
             status = RunResult.NG
-        yield RunResult(status, task.time)
+        yield RunResult(status, time)
 
     def _ResetIO(self, *args):
         for f in args:
@@ -439,16 +432,15 @@ class InternalDiffCode(CodeBase):
                     errfile = subprocess.STDOUT
                 else:
                     errfile = files.OpenNull()
-                task = taskgraph.ExternalProcessTask(
-                    run_args, cwd=cwd, stdin=infile, stdout=outfile,
-                    stderr=errfile, timeout=timeout)
                 try:
-                    proc = yield task
+                    proc, time = task.run_subprocess(
+                        run_args, cwd=cwd, stdin=infile, stdout=outfile,
+                        stderr=errfile, timeout=timeout)
                 except OSError:
                     yield RunResult(RunResult.RE, None)
                 ret = proc.returncode
                 if ret == 0:
-                    yield RunResult(RunResult.OK, task.time)
+                    yield RunResult(RunResult.OK, time)
                 if ret > 0:
                     yield RunResult(RunResult.NG, None)
                 yield RunResult(RunResult.RE, None)

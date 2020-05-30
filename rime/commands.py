@@ -6,6 +6,7 @@ import time
 
 from rime import codes
 from rime import consts
+from rime import task
 from rime import taskgraph
 from rime import test_summary
 from rime.util import files
@@ -809,11 +810,10 @@ class AtCoderUploader(UploaderBase):
         devnull = files.OpenNull()
 
         with open(log, 'a+') as logfile:
-            task = taskgraph.ExternalProcessTask(
-                args, cwd=problem.project.base_dir,
-                stdin=devnull, stdout=logfile, stderr=logfile, exclusive=True)
             try:
-                proc = yield task
+                proc, _ = task.run_subprocess(
+                    args, cwd=problem.project.base_dir,
+                    stdin=devnull, stdout=logfile, stderr=logfile)
             except Exception:
                 ui.errors.Exception(problem)
                 yield False

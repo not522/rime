@@ -1,10 +1,5 @@
 import functools
-import os
-import signal
-import subprocess
 import sys
-import threading
-import time
 
 from six import reraise
 
@@ -172,94 +167,6 @@ class GeneratorTask(Task):
 
 # Shortcut for daily use.
 task_method = GeneratorTask.FromFunction
-
-
-class ExternalProcessTask(Task):
-    def __init__(self, *args, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
-        self.proc = None
-        if 'timeout' in kwargs:
-            self.timeout = kwargs['timeout']
-            del kwargs['timeout']
-        else:
-            self.timeout = None
-        if 'exclusive' in kwargs:
-            self.exclusive = kwargs['exclusive']
-            del kwargs['exclusive']
-        else:
-            self.exclusive = False
-        self.timer = None
-
-    def CacheKey(self):
-        # Never cache.
-        return None
-
-    def Continue(self, value=None):
-        if self.exclusive:
-            return self._ContinueExclusive()
-        else:
-            return self._ContinueNonExclusive()
-
-    def _ContinueExclusive(self):
-        assert self.proc is None
-        self._StartProcess()
-        self.proc.wait()
-        return TaskReturn(self._EndProcess())
-
-    def _ContinueNonExclusive(self):
-        if self.proc is None:
-            self._StartProcess()
-            return TaskBlock()
-        elif not self.Poll():
-            return TaskBlock()
-        else:
-            return TaskReturn(self._EndProcess())
-
-    def Poll(self):
-        assert self.proc is not None
-        return self.proc.poll() is not None
-
-    def Wait(self):
-        assert self.proc is not None
-        self.proc.wait()
-
-    def Close(self):
-        if self.timer is not None:
-            self.timer.cancel()
-            self.timer = None
-        if self.proc is not None:
-            try:
-                os.kill(self.proc.pid, signal.SIGKILL)
-            except Exception:
-                pass
-            self.proc.wait()
-            self.proc = None
-
-    def _StartProcess(self):
-        self.start_time = time.time()
-        self.proc = subprocess.Popen(*self.args, **self.kwargs)
-        if self.timeout is not None:
-            def TimeoutKiller():
-                try:
-                    os.kill(self.proc.pid, signal.SIGXCPU)
-                except Exception:
-                    pass
-            self.timer = threading.Timer(self.timeout, TimeoutKiller)
-            self.timer.start()
-        else:
-            self.timer = None
-
-    def _EndProcess(self):
-        self.end_time = time.time()
-        self.time = self.end_time - self.start_time
-        if self.timer is not None:
-            self.timer.cancel()
-            self.timer = None
-        # Don't keep proc in cache.
-        proc = self.proc
-        self.proc = None
-        return proc
 
 
 class SerialTaskGraph(object):
