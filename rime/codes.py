@@ -6,7 +6,6 @@ import subprocess
 
 from rime import consts
 from rime import task
-from rime import taskgraph
 from rime.util import files
 
 
@@ -95,30 +94,28 @@ class CodeBase(Code):
         self.dependency = []
         self.variant = None
 
-    @taskgraph.task_method
     def Compile(self):
         """Compile the code and return RunResult."""
         try:
             if not self.compile_args:
                 result = RunResult(RunResult.OK, None)
             else:
-                result = yield self._ExecForCompile(args=self.compile_args)
+                result = self._ExecForCompile(args=self.compile_args)
         except Exception as e:
             result = RunResult('On compiling: %s' % e, None)
-        yield result
+        return result
 
-    @taskgraph.task_method
     def Run(self, args, cwd, input, output, timeout, precise,
             redirect_error=False):
         """Run the code and return RunResult."""
         try:
-            result = yield self._ExecForRun(
+            result = self._ExecForRun(
                 args=tuple(list(self.run_args) + list(args)), cwd=cwd,
                 input=input, output=output, timeout=timeout, precise=precise,
                 redirect_error=redirect_error)
         except Exception as e:
             result = RunResult('On execution: %s' % e, None)
-        yield result
+        return result
 
     def clean(self):
         """Cleans the output directory.
@@ -135,7 +132,6 @@ class CodeBase(Code):
     def ReadCompileLog(self):
         return files.ReadFile(os.path.join(self.out_dir, self.log_name))
 
-    @taskgraph.task_method
     def _ExecForCompile(self, args):
         for f in files.ListDir(self.src_dir):
             srcpath = os.path.join(self.src_dir, f)
@@ -158,11 +154,10 @@ class CodeBase(Code):
                         self.out_dir)
 
         with open(os.path.join(self.out_dir, self.log_name), 'w') as outfile:
-            yield (yield self._ExecInternal(
+            return self._ExecInternal(
                 args=args, cwd=self.out_dir, stdin=files.OpenNull(),
-                stdout=outfile, stderr=subprocess.STDOUT))
+                stdout=outfile, stderr=subprocess.STDOUT)
 
-    @taskgraph.task_method
     def _ExecForRun(self, args, cwd, input, output, timeout, precise,
                     redirect_error=False):
         with open(input, 'r') as infile:
@@ -171,12 +166,11 @@ class CodeBase(Code):
                     errfile = subprocess.STDOUT
                 else:
                     errfile = files.OpenNull()
-                yield (yield self._ExecInternal(
+                return self._ExecInternal(
                     args=args, cwd=cwd,
                     stdin=infile, stdout=outfile, stderr=errfile,
-                    timeout=timeout, precise=precise))
+                    timeout=timeout, precise=precise)
 
-    @taskgraph.task_method
     def _ExecInternal(self, args, cwd, stdin, stdout, stderr,
                       timeout=None, precise=False):
         proc, time = task.run_subprocess(
@@ -192,7 +186,7 @@ class CodeBase(Code):
             status = RunResult.RE
         else:
             status = RunResult.NG
-        yield RunResult(status, time)
+        return RunResult(status, time)
 
     def _ResetIO(self, *args):
         for f in args:
@@ -315,18 +309,17 @@ class ScriptCode(CodeBase):
             pass
         self.run_args = tuple(run_args)
 
-    @taskgraph.task_method
     def Compile(self, *args, **kwargs):
         """Fail if the script is missing a shebang line."""
         try:
             interpreter = self.run_args[0]
         except IOError:
-            yield RunResult('File not found', None)
+            return RunResult('File not found', None)
         if not interpreter:
-            yield RunResult('Script missing a shebang line', None)
+            return RunResult('Script missing a shebang line', None)
         if not os.path.exists(interpreter):
-            yield RunResult('Interpreter not found: %s' %
-                            interpreter, None)
+            return RunResult('Interpreter not found: %s' %
+                             interpreter, None)
 
         # when using env, try to output more detailed error message
         if interpreter == '/bin/env' or interpreter == '/usr/bin/env':
@@ -336,13 +329,13 @@ class ScriptCode(CodeBase):
                 interpreter = subprocess.check_output(
                     ['which', self.run_args[1]]).strip()
             except subprocess.CalledProcessError:
-                yield RunResult(
+                return RunResult(
                     'Interpreter not installed: %s' % self.run_args[1], None)
             if not os.path.exists(interpreter):
-                yield RunResult('Interpreter not found: %s' %
-                                interpreter, None)
+                return RunResult('Interpreter not found: %s' %
+                                 interpreter, None)
 
-        yield (yield CodeBase.Compile(self, *args, **kwargs))
+        return CodeBase.Compile(self, *args, **kwargs)
 
     def _ReadAndParseShebangLine(self):
         with open(os.path.join(self.src_dir, self.src_name)) as f:
@@ -364,14 +357,13 @@ class JavaScriptCode(CodeBase):
             run_args=['node', '--',
                       os.path.join(src_dir, src_name)] + run_flags)
 
-    @taskgraph.task_method
     def Compile(self, *args, **kwargs):
         """Fail if the script is missing a shebang line."""
         try:
             open(os.path.join(self.src_dir, self.src_name))
         except IOError:
-            yield RunResult('File not found', None)
-        yield (yield super(JavaScriptCode, self).Compile(*args, **kwargs))
+            return RunResult('File not found', None)
+        return super(JavaScriptCode, self).Compile(*args, **kwargs)
 
 
 class HaskellCode(CodeBase):
@@ -417,7 +409,6 @@ class InternalDiffCode(CodeBase):
             compile_args=[],
             run_args=[])
 
-    @taskgraph.task_method
     def Run(self, args, cwd, input, output, timeout, precise,
             redirect_error=False):
         parser = optparse.OptionParser()
@@ -437,14 +428,13 @@ class InternalDiffCode(CodeBase):
                         run_args, cwd=cwd, stdin=infile, stdout=outfile,
                         stderr=errfile, timeout=timeout)
                 except OSError:
-                    yield RunResult(RunResult.RE, None)
+                    return RunResult(RunResult.RE, None)
                 ret = proc.returncode
                 if ret == 0:
-                    yield RunResult(RunResult.OK, time)
+                    return RunResult(RunResult.OK, time)
                 if ret > 0:
-                    yield RunResult(RunResult.NG, None)
-                yield RunResult(RunResult.RE, None)
+                    return RunResult(RunResult.NG, None)
+                return RunResult(RunResult.RE, None)
 
-    @taskgraph.task_method
     def Clean(self):
-        yield True
+        return True

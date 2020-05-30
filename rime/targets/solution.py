@@ -59,7 +59,7 @@ class Solution(target.TargetBase, ProblemComponentMixin):
         files.MakeDir(self.out_dir)
         if not self.code.QUIET_COMPILE:
             ui.console.PrintAction('COMPILE', self)
-        res = yield self.code.Compile()
+        res = self.code.Compile()
         log = self.code.ReadCompileLog()
         if res.status != codes.RunResult.OK:
             ui.errors.Error(self, 'Compile Error (%s)' % res.status)
@@ -75,9 +75,9 @@ class Solution(target.TargetBase, ProblemComponentMixin):
     @taskgraph.task_method
     def Run(self, args, cwd, input, output, timeout, precise):
         """Run this solution."""
-        yield (yield self.code.Run(
+        yield self.code.Run(
             args=args, cwd=cwd, input=input, output=output,
-            timeout=timeout, precise=precise))
+            timeout=timeout, precise=precise)
 
     @taskgraph.task_method
     def Test(self, ui):

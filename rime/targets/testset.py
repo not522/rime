@@ -353,7 +353,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
         """Compile a single input generator."""
         if not generator.QUIET_COMPILE:
             ui.console.PrintAction('COMPILE', self, generator.src_name)
-        res = yield generator.Compile()
+        res = generator.Compile()
         if res.status != codes.RunResult.OK:
             ui.errors.Error(
                 self, '%s: Compile Error (%s)' %
@@ -383,7 +383,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
     def _RunGeneratorOne(self, generator, ui):
         """Run a single input generator."""
         ui.console.PrintAction('GENERATE', self, generator.src_name)
-        res = yield generator.Run(
+        res = generator.Run(
             args=(), cwd=self.out_dir,
             input=os.devnull, output=os.devnull, timeout=None, precise=False)
         if res.status != codes.RunResult.OK:
@@ -405,7 +405,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
         """Compile a single input validator."""
         if not validator.QUIET_COMPILE:
             ui.console.PrintAction('COMPILE', self, validator.src_name)
-        res = yield validator.Compile()
+        res = validator.Compile()
         if res.status != codes.RunResult.OK:
             ui.errors.Error(
                 self, '%s: Compile Error (%s)' %
@@ -444,7 +444,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
         """Run an input validator against a single input file."""
         validationfile = (
             os.path.splitext(testcase.infile)[0] + consts.VALIDATION_EXT)
-        res = yield validator.Run(
+        res = validator.Run(
             args=(), cwd=self.out_dir,
             input=testcase.infile,
             output=validationfile,
@@ -486,7 +486,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
         """Compile a single judge."""
         if not judge.QUIET_COMPILE:
             ui.console.PrintAction('COMPILE', self, judge.src_name)
-        res = yield judge.Compile()
+        res = judge.Compile()
         if res.status != codes.RunResult.OK:
             ui.errors.Error(
                 self, '%s: Compile Error (%s)' % (judge.src_name, res.status))
@@ -508,7 +508,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
         """Compile a single reative."""
         if not reactive.QUIET_COMPILE:
             ui.console.PrintAction('COMPILE', self, reactive.src_name)
-        res = yield reactive.Compile()
+        res = reactive.Compile()
         if res.status != codes.RunResult.OK:
             ui.errors.Error(self, '%s: Compile Error (%s)'
                             % (reactive.src_name, res.status))
@@ -545,7 +545,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
             reactive = self.reactives[0]
             if not reactive.variant:
                 reactive.variant = KUPCReactiveRunner()
-            res = yield reactive.variant.Run(
+            res = reactive.variant.Run(
                 reactive=reactive,
                 args=reference_solution.code.run_args,
                 cwd=reference_solution.out_dir,
@@ -1048,7 +1048,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
             reactive = self.reactives[0]
             if not reactive.variant:
                 reactive.variant = KUPCReactiveRunner()
-            res = yield reactive.variant.Run(
+            res = reactive.variant.Run(
                 reactive=reactive,
                 args=solution.code.run_args, cwd=solution.out_dir,
                 input=testcase.infile,
@@ -1071,7 +1071,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
         for judge in self.judges:
             if not judge.variant:
                 judge.variant = RimeJudgeRunner()
-            res = yield judge.variant.Run(
+            res = judge.variant.Run(
                 judge=judge,
                 infile=testcase.infile,
                 difffile=testcase.difffile,
@@ -1108,7 +1108,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
         """Run an input validator against a single input file."""
         validationfile = (
             os.path.splitext(testcase.infile)[0] + consts.VALIDATION_EXT)
-        res = yield validator.Run(
+        res = validator.Run(
             args=(), cwd=self.out_dir,
             input=testcase.infile,
             output=validationfile,
