@@ -1,5 +1,3 @@
-import itertools
-
 from rime.commands import AtCoderSubmitter
 from rime import codes
 from rime import target
@@ -77,13 +75,12 @@ class Solution(target.TargetBase, ProblemComponentMixin):
             args=args, cwd=cwd, input=input, output=output,
             timeout=timeout, precise=precise)
 
-    @taskgraph.task_method
-    def Test(self, ui):
+    def test(self, ui):
         """Run tests for the solution."""
-        results = yield taskgraph.TaskBranch(
-            [testset.TestSolution(self, ui) for testset in
-             self.problem.testsets])
-        yield list(itertools.chain(*results))
+        results = []
+        for testset in self.problem.testsets:
+            results.append(testset.test_solution(self, ui))
+        return results
 
     @taskgraph.task_method
     def Submit(self, ui):

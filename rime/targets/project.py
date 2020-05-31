@@ -1,7 +1,6 @@
 import codecs
 import getpass
 import hashlib
-import itertools
 import os
 import re
 import socket
@@ -185,12 +184,12 @@ class Project(target.TargetBase):
             results.append(problem.build(ui))
         return all(results)
 
-    @taskgraph.task_method
-    def Test(self, ui):
+    def test(self, ui):
         """Run tests in the project."""
-        results = yield taskgraph.TaskBranch(
-            [problem.Test(ui) for problem in self.problems])
-        yield list(itertools.chain(*results))
+        results = []
+        for problem in self.problems:
+            results += problem.test(ui)
+        return results
 
     @taskgraph.task_method
     def Pack(self, ui):

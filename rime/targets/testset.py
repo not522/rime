@@ -1,5 +1,4 @@
 import fnmatch
-import itertools
 import json
 import os.path
 import re
@@ -597,30 +596,28 @@ class Testset(target.TargetBase, ProblemComponentMixin):
         ui.console.PrintAction('VALIDATE', self, 'OK Merged Cases')
         return True
 
-    @taskgraph.task_method
-    def Test(self, ui):
+    def test(self, ui):
         """Run tests in the testset."""
-        results = yield taskgraph.TaskBranch(
-            [self.TestSolution(solution, ui) for solution in
-             self.problem.solutions])
-        yield list(itertools.chain(*results))
+        results = []
+        for solution in self.problem.solutions:
+            results.append(self.test_solution(solution, ui))
+        return results
 
-    @taskgraph.task_method
-    def TestSolution(self, solution, ui):
+    def test_solution(self, solution, ui):
         """Test a single solution."""
         if not self.build(ui):
             result = test.TestsetResult(self, solution, [])
             result.Finalize(False, 'Failed to build tests')
-            yield [result]
+            return result
         if not solution.build(ui):
             result = test.TestsetResult(self, solution, [])
             result.Finalize(False, 'Compile Error')
-            yield [result]
+            return result
         ui.console.PrintAction('TEST', solution, progress=True)
         if not solution.IsCorrect() and solution.challenge_cases:
-            result = yield self._TestSolutionWithChallengeCases(solution, ui)
+            result = self._test_solution_with_challenge_cases(solution, ui)
         else:
-            result = yield self._TestSolutionWithAllCases(solution, ui)
+            result = self._test_solution_with_all_cases(solution, ui)
         status_row = [result.detail]
         if result.IsCached():
             status_row += [' ', '(cached)']
@@ -631,10 +628,9 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                          consts.JUDGE_EXT)
             log = files.ReadFile(judgefile)
             ui.console.PrintLog(log)
-        yield [result]
+        return result
 
-    @taskgraph.task_method
-    def _TestSolutionWithChallengeCases(self, solution, ui):
+    def _test_solution_with_challenge_cases(self, solution, ui):
         """Test a wrong solution which has specified challenge cases."""
         all_testcases = self.ListTestCases()
         challenge_infiles = solution.challenge_cases
@@ -650,27 +646,27 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                 result = test.TestsetResult(self, solution, [])
                 result.Finalize(False,
                                 'Challenge case not found: %s' % infile)
-                yield result
+                return result
 
             testcases.extend(
                 [t for t in matched_testcases if t.infile not in testcases])
         # Try challenge cases.
         result = test.TestsetResult(self, solution, testcases)
-        yield taskgraph.TaskBranch([
-            self._TestSolutionWithChallengeCasesOne(
+        for testcase in testcases:
+            case_result = self._test_solution_with_challenge_cases_one(
                 solution, testcase, result, ui)
-            for testcase in testcases])
+            if not case_result and not ui.options['keep_going']:
+                break
         if not result.IsFinalized():
             result.Finalize(False,
                             'Unexpectedly accepted all challenge cases')
             ui.errors.Error(solution, result.detail)
-        yield result
+        return result
 
-    @taskgraph.task_method
-    def _TestSolutionWithChallengeCasesOne(self, solution, testcase, result,
-                                           ui):
+    def _test_solution_with_challenge_cases_one(
+            self, solution, testcase, result, ui):
         """Test a wrong solution which has specified challenge cases."""
-        case_result = yield self._TestOneCase(solution, testcase, ui)
+        case_result = self._test_one_case(solution, testcase, ui)
         result.results[testcase] = case_result
         if (solution.expected_verdicts is None and
                 case_result.verdict == test.TestCaseResult.AC):
@@ -678,7 +674,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                                    '%s: Unexpectedly accepted'
                                    % os.path.basename(testcase.infile),
                                    progress=True)
-            yield False
+            return False
         elif (solution.expected_verdicts is not None and
               case_result.verdict not in solution.expected_verdicts):
             result.Finalize(False,
@@ -687,10 +683,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                              case_result.verdict),
                             notable_testcase=testcase)
             ui.errors.Error(solution, result.detail)
-            if ui.options['keep_going']:
-                yield False
-            else:
-                raise taskgraph.Bailout([False])
+            return False
         elif case_result.verdict not in (test.TestCaseResult.WA,
                                          test.TestCaseResult.TLE,
                                          test.TestCaseResult.RE):
@@ -699,10 +692,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                                 testcase.infile),
                             notable_testcase=testcase)
             ui.errors.Error(solution, result.detail)
-            if ui.options['keep_going']:
-                yield False
-            else:
-                raise taskgraph.Bailout([False])
+            return False
         ui.console.PrintAction('TEST', solution,
                                '%s: PASSED' % os.path.basename(
                                    testcase.infile),
@@ -711,10 +701,9 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                         '%s: %s' % (os.path.basename(testcase.infile),
                                     case_result.verdict),
                         notable_testcase=testcase)
-        yield True
+        return True
 
-    @taskgraph.task_method
-    def _TestSolutionWithAllCases(self, solution, ui):
+    def _test_solution_with_all_cases(self, solution, ui):
         """Test a solution without challenge cases.
 
         The solution can be marked as wrong but without challenge cases.
@@ -722,23 +711,23 @@ class Testset(target.TargetBase, ProblemComponentMixin):
         testcases = self.ListTestCases()
         result = test.TestsetResult(self, solution, testcases)
         # Try all cases.
-        yield taskgraph.TaskBranch([
-            self._TestSolutionWithAllCasesOne(solution, testcase, result, ui)
-            for testcase in testcases])
+        for testcase in testcases:
+            case_result = self._test_solution_with_all_cases_one(
+                solution, testcase, result, ui)
+            if not case_result and not ui.options['keep_going']:
+                break
         if not result.IsFinalized():
             if solution.IsCorrect():
                 result.Finalize(True, result.GetTimeStats(ui))
             else:
                 result.Finalize(False, 'Unexpectedly accepted all test cases')
                 ui.errors.Error(solution, result.detail)
-        yield result
 
         original_result = result
         if (original_result.expected and
                 solution.IsCorrect() and
                 self.merged_testcases):
-            merged_result = (yield self._TestSolutionWithMergedTests(
-                solution, ui))
+            merged_result = self._test_solution_with_merged_tests(solution, ui)
             original_result.results.update(merged_result.results)
             if not merged_result.expected:
                 original_result.Finalize(
@@ -761,7 +750,6 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                                           for t in merged_result.testcases])))
                 original_result.Finalize(
                     True, detail=detail, allow_override=True)
-        yield original_result
 
         if self.subtask:
             max_score = 0
@@ -850,14 +838,14 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                             notable_testcase=test.TestCase(
                                 self, 'judge_error.in'),
                             detail=original_result.detail, allow_override=True)
-                        yield original_result
+                        return original_result
                 else:
                     ui.errors.Error(self, 'the judge is silent.')
                     original_result.Finalize(
                         False,
                         notable_testcase=test.TestCase(self, 'judge_error.in'),
                         detail=original_result.detail, allow_override=True)
-                    yield original_result
+                    return original_result
             score /= float(len(original_result.results))
             detail = ('%s, score %s' %
                       (original_result.detail, score))
@@ -875,15 +863,15 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                                 'expected score %d does not equal to %s' %
                                 (solution.expected_score, score))
             original_result.Finalize(True, detail=detail, allow_override=True)
-        yield original_result
+        return original_result
 
-    @taskgraph.task_method
-    def _TestSolutionWithAllCasesOne(self, solution, testcase, result, ui):
+    def _test_solution_with_all_cases_one(
+            self, solution, testcase, result, ui):
         """Test a solution without challenge cases.
 
         The solution can be marked as wrong but without challenge cases.
         """
-        case_result = yield self._TestOneCase(solution, testcase, ui)
+        case_result = self._test_one_case(solution, testcase, ui)
         result.results[testcase] = case_result
         if case_result.verdict not in (test.TestCaseResult.AC,
                                        test.TestCaseResult.WA,
@@ -894,10 +882,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                             os.path.basename(testcase.infile),
                             notable_testcase=testcase)
             ui.errors.Error(solution, result.detail)
-            if ui.options['keep_going']:
-                yield False
-            else:
-                raise taskgraph.Bailout([False])
+            return False
         elif case_result.verdict != test.TestCaseResult.AC:
             expected = not solution.IsCorrect()
             r = test.TestsetResult(
@@ -943,30 +928,27 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                                     (r.detail, judgefile))
                 else:
                     ui.errors.Error(solution, r.detail)
-            if ui.options['keep_going']:
-                yield False
-            else:
-                raise taskgraph.Bailout([False])
+            return False
         ui.console.PrintAction('TEST', solution,
                                '%s: PASSED' % os.path.basename(
                                    testcase.infile),
                                progress=True)
-        yield True
+        return True
 
-    @taskgraph.task_method
-    def _TestSolutionWithMergedTests(self, solution, ui):
+    def _test_solution_with_merged_tests(self, solution, ui):
         testcases = self.GetMergedTestCases()
         result = test.TestsetResult(self, solution, testcases)
         # Try all cases.
-        yield taskgraph.TaskBranch([
-            self._TestSolutionWithAllCasesOne(solution, testcase, result, ui)
-            for testcase in testcases])
+        for testcase in testcases:
+            result = self._test_solution_with_all_cases_one(
+                solution, testcase, result, ui)
+            if not result and not ui.options['keep_goin']:
+                break
         if not result.IsFinalized():
             result.Finalize(True, 'okay')
-        yield result
+        return result
 
-    @taskgraph.task_method
-    def _TestOneCase(self, solution, testcase, ui):
+    def _test_one_case(self, solution, testcase, ui):
         """Test a solution with one case.
 
         Cache results if option is set.
@@ -1004,9 +986,9 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                     if isinstance(verdict, test.TestVerdict) and
                     verdict.msg == j['verdict']][0]
 
-            yield case_result
+            return case_result
 
-        case_result = yield self._TestOneCaseNoCache(solution, testcase, ui)
+        case_result = self._test_one_case_no_cache(solution, testcase, ui)
 
         # always cache in json
         files.WriteFile(json.dumps({
@@ -1014,10 +996,9 @@ class Testset(target.TargetBase, ProblemComponentMixin):
             'time': case_result.time
         }), cache_file_name)
 
-        yield case_result
+        return case_result
 
-    @taskgraph.task_method
-    def _TestOneCaseNoCache(self, solution, testcase, ui):
+    def _test_one_case_no_cache(self, solution, testcase, ui):
         """Test a solution with one case.
 
         Never cache results.
@@ -1033,7 +1014,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
         if self.reactives:
             if len(self.reactives) > 1:
                 ui.errors.Error(self, "Multiple reactive checkers registered.")
-                yield None
+                return
             reactive = self.reactives[0]
             if not reactive.variant:
                 reactive.variant = KUPCReactiveRunner()
@@ -1050,10 +1031,10 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                 output=outfile,
                 timeout=testcase.timeout, precise=precise)
         if res.status == codes.RunResult.TLE:
-            yield test.TestCaseResult(
+            return test.TestCaseResult(
                 solution, test.TestCaseResult.TLE, time=None, cached=False)
         if res.status != codes.RunResult.OK:
-            yield test.TestCaseResult(
+            return test.TestCaseResult(
                 solution, test.TestCaseResult.RE, time=None, cached=False)
 
         time = res.time
@@ -1068,14 +1049,14 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                 cwd=self.out_dir,
                 judgefile=judgefile)
             if res.status == codes.RunResult.NG:
-                yield test.TestCaseResult(
+                return test.TestCaseResult(
                     solution, test.TestCaseResult.WA, time=None, cached=False)
             elif res.status != codes.RunResult.OK:
-                yield test.TestCaseResult(
+                return test.TestCaseResult(
                     solution, test.TestVerdict('Validator %s' % res.status),
                     time=None, cached=False)
-        yield test.TestCaseResult(solution, test.TestCaseResult.AC,
-                                  time=time, cached=False)
+        return test.TestCaseResult(solution, test.TestCaseResult.AC,
+                                   time=time, cached=False)
 
     consts.INVALID_EXT = '.invalid'
 

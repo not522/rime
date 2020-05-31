@@ -134,12 +134,12 @@ class Problem(target.TargetBase):
         results.append(self.testset.build(ui))
         return all(results)
 
-    @taskgraph.task_method
-    def Test(self, ui):
+    def test(self, ui):
         """Run tests in the problem."""
-        results = yield taskgraph.TaskBranch(
-            [testset.Test(ui) for testset in self.testsets])
-        yield list(itertools.chain(*results))
+        results = []
+        for testset in self.testsets:
+            results += testset.test(ui)
+        return results
 
     @taskgraph.task_method
     def TestSolution(self, solution, ui):

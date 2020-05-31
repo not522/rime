@@ -320,7 +320,7 @@ class Build(CommandBase):
             parent)
 
     def Run(self, project, args, ui):
-        return RunCommon('build', project, args, ui)
+        RunCommon('build', project, args, ui)
 
 
 class Test(CommandBase):
@@ -333,16 +333,8 @@ class Test(CommandBase):
             parent)
 
     def Run(self, project, args, ui):
-        task = RunCommon('Test', project, args, ui)
-        if not task:
-            return task
-
-        @taskgraph.task_method
-        def TestWrapper():
-            results = yield task
-            test_summary.PrintTestSummary(results, ui)
-            yield results
-        return TestWrapper()
+        results = RunCommon('test', project, args, ui)
+        test_summary.PrintTestSummary(results, ui)
 
 
 class PackerBase(object):
@@ -892,7 +884,7 @@ class Clean(CommandBase):
             parent)
 
     def Run(self, project, args, ui):
-        return RunCommon('clean', project, args, ui)
+        RunCommon('clean', project, args, ui)
 
 
 class Help(CommandBase):
