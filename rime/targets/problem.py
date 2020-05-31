@@ -126,13 +126,13 @@ class Problem(target.TargetBase):
                 return obj
         return None
 
-    @taskgraph.task_method
-    def Build(self, ui):
+    def build(self, ui):
         """Build all solutions and the testset."""
-        results = yield taskgraph.TaskBranch(
-            [solution.Build(ui) for solution in self.solutions] +
-            [self.testset.Build(ui)])
-        yield all(results)
+        results = []
+        for solution in self.solutions:
+            results.append(solution.build(ui))
+        results.append(self.testset.build(ui))
+        return all(results)
 
     @taskgraph.task_method
     def Test(self, ui):

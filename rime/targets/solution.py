@@ -49,13 +49,12 @@ class Solution(target.TargetBase, ProblemComponentMixin):
         """Returns whether this is correct solution."""
         return self.challenge_cases is None
 
-    @taskgraph.task_method
-    def Build(self, ui):
+    def build(self, ui):
         """Build this solution."""
         if self.IsBuildCached():
             ui.console.PrintAction(
                 'COMPILE', self, 'up-to-date', progress=True)
-            yield True
+            return True
         files.MakeDir(self.out_dir)
         if not self.code.QUIET_COMPILE:
             ui.console.PrintAction('COMPILE', self)
@@ -64,18 +63,17 @@ class Solution(target.TargetBase, ProblemComponentMixin):
         if res.status != codes.RunResult.OK:
             ui.errors.Error(self, 'Compile Error (%s)' % res.status)
             ui.console.PrintLog(log)
-            yield False
+            return False
         if log:
             ui.console.Print('Compiler warnings found:')
             ui.console.PrintLog(log)
         if not self.SetCacheStamp(ui):
-            yield False
-        yield True
+            return False
+        return True
 
-    @taskgraph.task_method
     def Run(self, args, cwd, input, output, timeout, precise):
         """Run this solution."""
-        yield self.code.Run(
+        return self.code.Run(
             args=args, cwd=cwd, input=input, output=output,
             timeout=timeout, precise=precise)
 
@@ -89,7 +87,7 @@ class Solution(target.TargetBase, ProblemComponentMixin):
 
     @taskgraph.task_method
     def Submit(self, ui):
-        if not (yield self.Build(ui)):
+        if not self.build(ui):
             yield False
         if self.project.judge_system.name == 'AtCoder':
             results = yield taskgraph.TaskBranch(

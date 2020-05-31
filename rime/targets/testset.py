@@ -298,58 +298,55 @@ class Testset(target.TargetBase, ProblemComponentMixin):
             return re.sub(r'\d+', replace_digits, s.infile)
         testcases.sort(key=tokenize)
 
-    @taskgraph.task_method
-    def Build(self, ui):
+    def build(self, ui):
         """Build testset."""
         if self.IsBuildCached():
             if not self.ListTestCases():
                 ui.errors.Warning(self, 'No test case found')
-            yield True
-        if not (yield self._InitOutputDir(ui)):
-            yield False
-        if not all((yield taskgraph.TaskBranch([
-                self._CompileGenerators(ui),
-                self._CompileValidators(ui),
-                self._CompileJudges(ui)]))):
-            yield False
-        if not (yield self._RunGenerators(ui)):
-            yield False
-        if not (yield self._RunValidators(ui)):
-            yield False
+            return True
+        if not self._init_output_dir(ui):
+            return False
+        if not self._compile_generators(ui):
+            return False
+        if not self._compile_validators(ui):
+            return False
+        if not self._compile_judges(ui):
+            return False
+        if not self._run_generators(ui):
+            return False
+        if not self._run_validators(ui):
+            return False
         if not self.ListTestCases():
             ui.errors.Warning(self, 'No test case found')
         else:
-            if not (yield self._CompileReferenceSolution(ui)):
-                yield False
-            if not (yield self._RunReferenceSolution(ui)):
-                yield False
-        if not (yield self._PostBuildHook(ui)):
-            yield False
+            if not self._compile_reference_solution(ui):
+                return False
+            if not self._run_reference_solution(ui):
+                return False
+        if not self._post_build_hook(ui):
+            return False
         if not self.SetCacheStamp(ui):
-            yield False
-        yield True
+            return False
+        return True
 
-    @taskgraph.task_method
-    def _InitOutputDir(self, ui):
+    def _init_output_dir(self, ui):
         """Initialize output directory."""
         try:
             files.RemoveTree(self.out_dir)
             files.CopyTree(self.src_dir, self.out_dir)
         except Exception:
             ui.errors.Exception(self)
-            yield False
-        yield True
+            return False
+        return True
 
-    @taskgraph.task_method
-    def _CompileGenerators(self, ui):
+    def _compile_generators(self, ui):
         """Compile all input generators."""
-        results = yield taskgraph.TaskBranch([
-            self._CompileGeneratorOne(generator, ui)
-            for generator in self.generators])
-        yield all(results)
+        results = []
+        for generator in self.generators:
+            results.append(self._compile_generator_one(generator, ui))
+        return all(results)
 
-    @taskgraph.task_method
-    def _CompileGeneratorOne(self, generator, ui):
+    def _compile_generator_one(self, generator, ui):
         """Compile a single input generator."""
         if not generator.QUIET_COMPILE:
             ui.console.PrintAction('COMPILE', self, generator.src_name)
@@ -359,16 +356,16 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                 self, '%s: Compile Error (%s)' %
                 (generator.src_name, res.status))
             ui.console.PrintLog(generator.ReadCompileLog())
-            raise taskgraph.Bailout([False])
-        yield True
+            return False
+        return True
 
-    @taskgraph.task_method
-    def _RunGenerators(self, ui):
+    def _run_generators(self, ui):
         """Run all input generators."""
-        results = yield taskgraph.TaskBranch([
-            self._RunGeneratorOne(generator, ui)
-            for generator in self.generators])
-        yield all(results)
+        results = []
+        for generator in self.generators:
+            results.append(self._run_generator_one(generator, ui))
+        if not all(results):
+            return False
 
         if self.test_merger:
             for testcase in self.ListTestCases():
@@ -377,10 +374,9 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                 files.CopyFile(src, dst)
                 self.test_merger.Run([testcase], testcase, ui)
 
-        yield True
+        return True
 
-    @taskgraph.task_method
-    def _RunGeneratorOne(self, generator, ui):
+    def _run_generator_one(self, generator, ui):
         """Run a single input generator."""
         ui.console.PrintAction('GENERATE', self, generator.src_name)
         res = generator.Run(
@@ -389,19 +385,17 @@ class Testset(target.TargetBase, ProblemComponentMixin):
         if res.status != codes.RunResult.OK:
             ui.errors.Error(self,
                             '%s: %s' % (generator.src_name, res.status))
-            raise taskgraph.Bailout([False])
-        yield True
+            return False
+        return True
 
-    @taskgraph.task_method
-    def _CompileValidators(self, ui):
+    def _compile_validators(self, ui):
         """Compile input validators."""
-        results = yield taskgraph.TaskBranch([
-            self._CompileValidatorOne(validator, ui)
-            for validator in self.validators])
-        yield all(results)
+        results = []
+        for validator in self.validators:
+            results.append(self._compile_validator_one(validator, ui))
+        return all(results)
 
-    @taskgraph.task_method
-    def _CompileValidatorOne(self, validator, ui):
+    def _compile_validator_one(self, validator, ui):
         """Compile a single input validator."""
         if not validator.QUIET_COMPILE:
             ui.console.PrintAction('COMPILE', self, validator.src_name)
@@ -412,35 +406,33 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                 (validator.src_name, res.status))
             ui.console.PrintLog(validator.ReadCompileLog())
             raise taskgraph.Bailout([False])
-        yield True
+        return True
 
-    @taskgraph.task_method
-    def _RunValidators(self, ui):
+    def _run_validators(self, ui):
         """Run input validators."""
         if not self.validators:
             # Ignore when this testset actually does not exist.
             if self.base_dir:
                 ui.errors.Warning(self, 'Validator unavailable')
-            yield True
-        testcases = self.ListTestCases()
-        results = yield taskgraph.TaskBranch([
-            self._RunValidatorOne(validator, testcase, ui)
-            for validator in self.validators
-            for testcase in testcases])
-        if not all(results):
-            yield False
-        invalidcases = self.ListInvalidTestCases()
-        results = yield taskgraph.TaskBranch([
-            self._RunValidatorForInvalidCasesOne(validator, invalidcase, ui)
-            for validator in self.validators
-            for invalidcase in invalidcases])
-        if not all(results):
-            yield False
-        ui.console.PrintAction('VALIDATE', self, 'OK')
-        yield True
+            return True
 
-    @taskgraph.task_method
-    def _RunValidatorOne(self, validator, testcase, ui):
+        testcases = self.ListTestCases()
+        invalidcases = self.ListInvalidTestCases()
+        results = []
+        for validator in self.validators:
+            for testcase in testcases:
+                results.append(self._run_validator_one(
+                    validator, testcase, ui))
+            for invalidcase in invalidcases:
+                results.append(self._run_validator_for_invalid_cases_one(
+                    validator, invalidcase, ui))
+
+        if not all(results):
+            return False
+        ui.console.PrintAction('VALIDATE', self, 'OK')
+        return True
+
+    def _run_validator_one(self, validator, testcase, ui):
         """Run an input validator against a single input file."""
         validationfile = (
             os.path.splitext(testcase.infile)[0] + consts.VALIDATION_EXT)
@@ -456,33 +448,32 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                 os.path.basename(testcase.infile))
             log = files.ReadFile(validationfile)
             ui.console.PrintLog(log)
-            raise taskgraph.Bailout([False])
+            return False
         elif res.status != codes.RunResult.OK:
             ui.errors.Error(self,
                             '%s: Validator Failed: %s' %
                             (os.path.basename(testcase.infile), res.status))
-            raise taskgraph.Bailout([False])
+            return False
         ui.console.PrintAction('VALIDATE', self,
                                '%s: PASSED' % os.path.basename(
                                    testcase.infile),
                                progress=True)
-        yield True
+        return True
 
-    @taskgraph.task_method
-    def _CompileJudges(self, ui):
+    def _compile_judges(self, ui):
         """Compile all judges."""
-        results = yield taskgraph.TaskBranch([
-            self._CompileJudgeOne(judge, ui)
-            for judge in self.judges])
-        yield all(results)
+        results = []
+        for judge in self.judges:
+            results.append(self._compile_judge_one(judge, ui))
+        if not all(results):
+            return False
 
-        results = yield taskgraph.TaskBranch([
-            self._CompileReactiveOne(reactive, ui)
-            for reactive in self.reactives])
-        yield all(results)
+        results = []
+        for reactive in self.reactives:
+            results.append(self._compile_reactive_one(reactive, ui))
+        return all(results)
 
-    @taskgraph.task_method
-    def _CompileJudgeOne(self, judge, ui):
+    def _compile_judge_one(self, judge, ui):
         """Compile a single judge."""
         if not judge.QUIET_COMPILE:
             ui.console.PrintAction('COMPILE', self, judge.src_name)
@@ -491,20 +482,18 @@ class Testset(target.TargetBase, ProblemComponentMixin):
             ui.errors.Error(
                 self, '%s: Compile Error (%s)' % (judge.src_name, res.status))
             ui.console.PrintLog(judge.ReadCompileLog())
-            yield False
-        yield True
+            return False
+        return True
 
-    @taskgraph.task_method
-    def _CompileReferenceSolution(self, ui):
+    def _compile_reference_solution(self, ui):
         """Compile the reference solution."""
         reference_solution = self.problem.reference_solution
         if reference_solution is None:
             ui.errors.Error(self, 'Reference solution unavailable')
-            yield False
-        yield (yield reference_solution.Build(ui))
+            return False
+        return reference_solution.build(ui)
 
-    @taskgraph.task_method
-    def _CompileReactiveOne(self, reactive, ui):
+    def _compile_reactive_one(self, reactive, ui):
         """Compile a single reative."""
         if not reactive.QUIET_COMPILE:
             ui.console.PrintAction('COMPILE', self, reactive.src_name)
@@ -513,35 +502,34 @@ class Testset(target.TargetBase, ProblemComponentMixin):
             ui.errors.Error(self, '%s: Compile Error (%s)'
                             % (reactive.src_name, res.status))
             ui.console.PrintLog(reactive.ReadCompileLog())
-            yield False
-        yield True
+            return False
+        return True
 
-    @taskgraph.task_method
-    def _RunReferenceSolution(self, ui):
+    def _run_reference_solution(self, ui):
         """Run the reference solution to generate reference outputs."""
         reference_solution = self.problem.reference_solution
         if reference_solution is None:
             ui.errors.Error(self, 'Reference solution unavailable')
-            yield False
+            return False
         testcases = self.ListTestCases()
-        results = yield taskgraph.TaskBranch([
-            self._RunReferenceSolutionOne(reference_solution, testcase, ui)
-            for testcase in testcases])
+        results = []
+        for testcase in testcases:
+            results.append(self._run_reference_solution_one(
+                reference_solution, testcase, ui))
         if not all(results):
-            yield False
+            return False
         ui.console.PrintAction('REFRUN', reference_solution)
-        yield True
+        return True
 
-    @taskgraph.task_method
-    def _RunReferenceSolutionOne(self, reference_solution, testcase, ui):
+    def _run_reference_solution_one(self, reference_solution, testcase, ui):
         """Run the reference solution against a single input file."""
         if os.path.isfile(testcase.difffile):
-            yield True
+            return True
         # reactive
         if self.reactives:
             if len(self.reactives) > 1:
                 ui.errors.Error(self, "Multiple reactive checkers registered.")
-                yield None
+                return None
             reactive = self.reactives[0]
             if not reactive.variant:
                 reactive.variant = KUPCReactiveRunner()
@@ -553,60 +541,61 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                 output=testcase.difffile,
                 timeout=None, precise=False)
         else:
-            res = yield reference_solution.Run(
+            res = reference_solution.Run(
                 args=(), cwd=reference_solution.out_dir,
                 input=testcase.infile,
                 output=testcase.difffile,
                 timeout=None, precise=False)
         if res.status != codes.RunResult.OK:
             ui.errors.Error(reference_solution, res.status)
-            raise taskgraph.Bailout([False])
+            return False
         ui.console.PrintAction('REFRUN', reference_solution,
                                '%s: DONE' % os.path.basename(testcase.infile),
                                progress=True)
-        yield True
+        return True
 
-    @taskgraph.task_method
-    def _PostBuildHook(self, ui):
-        if not all((yield taskgraph.TaskBranch([
-                self._GenerateMergedTest(testcase, ui)
-                for testcase in self.GetMergedTestCases()]))):
-            yield False
+    def _post_build_hook(self, ui):
+        results = []
+        for testcase in self.GetMergedTestCases():
+            results.append(self._generate_merged_test(testcase, ui))
+        if not all(results):
+            return False
 
-        if not all((yield taskgraph.TaskBranch([
-                self._ValidateMergedTest(testcase, ui)
-                for testcase in self.GetMergedTestCases()]))):
-            yield False
+        results = []
+        for testcase in self.GetMergedTestCases():
+            results.append(self._validate_merged_test(testcase, ui))
+        if not all(results):
+            return False
 
-        yield True
+        return True
 
-    @taskgraph.task_method
-    def _GenerateMergedTest(self, merged_testcase, ui):
+    def _generate_merged_test(self, merged_testcase, ui):
         if not self.test_merger:
             ui.errors.Error(self, "No merger registered!")
-            yield False
+            return False
 
         testcases = [t for t in self.ListTestCases()
                      if fnmatch.fnmatch(os.path.basename(t.infile),
                                         merged_testcase.input_pattern)]
         self.test_merger.Run(testcases, merged_testcase, ui)
-        yield True
+        return True
 
-    @taskgraph.task_method
-    def _ValidateMergedTest(self, merged_testcase, ui):
+    def _validate_merged_test(self, merged_testcase, ui):
         if not self.validators:
             if self.base_dir:
                 ui.errors.Warning(self, 'Validator unavailable')
-            yield True
+            return True
         testcases = self.GetMergedTestCases()
-        results = yield taskgraph.TaskBranch([
-            self._RunValidatorOne(validator, testcase, ui)
-            for validator in self.validators
-            for testcase in testcases])
+        results = []
+        for validator in self.validators:
+            for testcase in testcases:
+                results.append(self._run_validator_one(
+                    validator, testcase, ui))
+
         if not all(results):
-            yield False
+            return False
         ui.console.PrintAction('VALIDATE', self, 'OK Merged Cases')
-        yield True
+        return True
 
     @taskgraph.task_method
     def Test(self, ui):
@@ -619,11 +608,11 @@ class Testset(target.TargetBase, ProblemComponentMixin):
     @taskgraph.task_method
     def TestSolution(self, solution, ui):
         """Test a single solution."""
-        if not (yield self.Build(ui)):
+        if not self.build(ui):
             result = test.TestsetResult(self, solution, [])
             result.Finalize(False, 'Failed to build tests')
             yield [result]
-        if not (yield solution.Build(ui)):
+        if not solution.build(ui):
             result = test.TestsetResult(self, solution, [])
             result.Finalize(False, 'Compile Error')
             yield [result]
@@ -1055,7 +1044,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                 output=outfile,
                 timeout=testcase.timeout, precise=precise)
         else:
-            res = yield solution.Run(
+            res = solution.Run(
                 args=(), cwd=solution.out_dir,
                 input=testcase.infile,
                 output=outfile,
@@ -1103,8 +1092,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
         self._SortTestCases(testcases)
         return testcases
 
-    @taskgraph.task_method
-    def _RunValidatorForInvalidCasesOne(self, validator, testcase, ui):
+    def _run_validator_for_invalid_cases_one(self, validator, testcase, ui):
         """Run an input validator against a single input file."""
         validationfile = (
             os.path.splitext(testcase.infile)[0] + consts.VALIDATION_EXT)
@@ -1118,16 +1106,16 @@ class Testset(target.TargetBase, ProblemComponentMixin):
             ui.errors.Error(self,
                             '%s: Unexpectedly Validator Accepted: %s' %
                             (os.path.basename(testcase.infile), res.status))
-            raise taskgraph.Bailout([False])
+            return False
         ui.console.PrintAction(
             'VALIDATE', self,
             '%s: Expectedly Failed' % os.path.basename(testcase.infile),
             progress=True)
-        yield True
+        return True
 
     @taskgraph.task_method
     def Pack(self, ui):
-        if not (yield self.Build(ui)):
+        if not self.build(ui):
             yield False
         if self.project.judge_system.name == 'AOJ':
             results = yield taskgraph.TaskBranch(

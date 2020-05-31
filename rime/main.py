@@ -83,17 +83,16 @@ def InternalMain(argv):
     task = None
     try:
         task = cmd.Run(project, tuple(args), ui)
-        if task and not isinstance(cmd, commands_mod.Clean):
+        if isinstance(task, taskgraph.Task):
             graph.Run(task)
     except KeyboardInterrupt:
         if ui.options['debug'] >= 1:
             traceback.print_exc()
         raise
 
-    if task:
-        console.Print()
-        console.Print(console.BOLD, 'Error Summary:', console.NORMAL)
-        ui.errors.PrintSummary()
+    console.Print()
+    console.Print(console.BOLD, 'Error Summary:', console.NORMAL)
+    ui.errors.PrintSummary()
     if ui.errors.HasError():
         return 1
     return 0

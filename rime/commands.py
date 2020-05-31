@@ -320,7 +320,7 @@ class Build(CommandBase):
             parent)
 
     def Run(self, project, args, ui):
-        return RunCommon('Build', project, args, ui)
+        return RunCommon('build', project, args, ui)
 
 
 class Test(CommandBase):

@@ -178,12 +178,12 @@ class Project(target.TargetBase):
                 return obj
         return None
 
-    @taskgraph.task_method
-    def Build(self, ui):
+    def build(self, ui):
         """Build all problems."""
-        results = yield taskgraph.TaskBranch(
-            [problem.Build(ui) for problem in self.problems])
-        yield all(results)
+        results = []
+        for problem in self.problems:
+            results.append(problem.build(ui))
+        return all(results)
 
     @taskgraph.task_method
     def Test(self, ui):
@@ -466,7 +466,9 @@ class Project(target.TargetBase):
 
     @taskgraph.task_method
     def _GenerateWikiFullOne(self, problem, ui):
-        yield problem.Build(ui)
+        result = problem.Build(ui)
+        if not result:
+            return False
 
         # Get status.
         title = SafeUnicode(problem.wikify_config.title)
@@ -689,7 +691,9 @@ class Project(target.TargetBase):
 
     @taskgraph.task_method
     def _GenerateHtmlFullOne(self, problem, ui):
-        yield problem.Build(ui)
+        result = problem.build(ui)
+        if not result:
+            return False
 
         # Get status.
         title = SafeUnicode(problem.wikify_config.title)
