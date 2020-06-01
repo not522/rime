@@ -12,7 +12,6 @@ from six.moves import urllib
 from rime import codes
 from rime import consts
 from rime import target
-from rime import test
 from rime.targets.problem import Problem
 from rime.util import files
 
@@ -501,8 +500,7 @@ class Project(target.TargetBase):
         for testname in testnames:
             cols = []
             for name in solutionnames:
-                cols.append(dics[testname].get(
-                    name, (test.TestCaseResult.NA, None)))
+                cols.append(dics[testname].get(name, ('NA', None)))
             lists.append((testname, cols))
         rows = []
         dir = problem.testset.out_dir
@@ -583,7 +581,7 @@ class Project(target.TargetBase):
         return wiki, wikiFull
 
     def _GetMessage(self, verdict, time):
-        if verdict is test.TestCaseResult.NA:
+        if verdict == 'NA':
             return BGCOLOR_NA + str(verdict)
         elif time is None:
             return BGCOLOR_BAD + str(verdict)
@@ -716,8 +714,7 @@ class Project(target.TargetBase):
         for testname in testnames:
             cols = []
             for name in solutionnames:
-                cols.append(dics[testname].get(
-                    name, (test.TestCaseResult.NA, None)))
+                cols.append(dics[testname].get(name, ('NA', None)))
             lists.append((testname, cols))
         rows = []
         dir = problem.testset.out_dir
@@ -800,7 +797,7 @@ class Project(target.TargetBase):
         return html, htmlFull
 
     def _GetHtmlifyMessage(self, verdict, time):
-        if verdict is test.TestCaseResult.NA:
+        if verdict == 'NA':
             return HTMLIFY_BGCOLOR_NA + str(verdict)
         elif time is None:
             return HTMLIFY_BGCOLOR_BAD + str(verdict)

@@ -23,20 +23,7 @@ class Solution(target.TargetBase, ProblemComponentMixin):
         self.code = codes.get_code(
             src_dir=self.src_dir, out_dir=self.out_dir, **config)
         self.challenge_cases = config.get('challenge_cases')
-
-        expected_verdicts = config.get('expected_verdicts', [])
-        self.expected_verdicts = []
-        if 'AC' in expected_verdicts:
-            self.expected_verdicts.append(test.TestCaseResult.AC)
-        if 'WA' in expected_verdicts:
-            self.expected_verdicts.append(test.TestCaseResult.WA)
-        if 'TLE' in expected_verdicts:
-            self.expected_verdicts.append(test.TestCaseResult.TLE)
-        if 'RE' in expected_verdicts:
-            self.expected_verdicts.append(test.TestCaseResult.RE)
-        if self.expected_verdicts == []:
-            self.expected_verdicts = None
-
+        self.verdicts = test.Verdicts(config.get('verdicts'))
         self.expected_score = config.get('expected_score')
 
     def PostLoad(self, ui):

@@ -667,15 +667,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
         """Test a wrong solution which has specified challenge cases."""
         case_result = self._test_one_case(solution, testcase, ui)
         result.results[testcase] = case_result
-        if (solution.expected_verdicts is None and
-                case_result.verdict == test.TestCaseResult.AC):
-            ui.console.PrintAction('TEST', solution,
-                                   '%s: Unexpectedly accepted'
-                                   % os.path.basename(testcase.infile),
-                                   progress=True)
-            return False
-        elif (solution.expected_verdicts is not None and
-              case_result.verdict not in solution.expected_verdicts):
+        if not solution.verdicts.is_expected(case_result.verdict):
             result.Finalize(False,
                             '%s: Unexpected Verdict (%s)' %
                             (os.path.basename(testcase.infile),
@@ -683,9 +675,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                             notable_testcase=testcase)
             ui.errors.Error(solution, result.detail)
             return False
-        elif case_result.verdict not in (test.TestCaseResult.WA,
-                                         test.TestCaseResult.TLE,
-                                         test.TestCaseResult.RE):
+        elif case_result.verdict not in ('WA', 'TLE', 'RE'):
             result.Finalize(False,
                             '%s: Judge Error' % os.path.basename(
                                 testcase.infile),
@@ -760,10 +750,10 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                     if any([fnmatch.fnmatch(os.path.basename(t.infile),
                                             input_pattern)
                             for input_pattern in subtask.input_patterns])]
-                accepted = all([result.verdict == test.TestCaseResult.AC
+                accepted = all([result.verdict == 'AC'
                                 for result in subtask_results
-                                if result.verdict != test.TestCaseResult.NA])
-                unknown = any([result.verdict == test.TestCaseResult.NA
+                                if result.verdict != 'NA'])
+                unknown = any([result.verdict == 'NA'
                                for result in subtask_results])
                 if accepted:
                     if not unknown:
@@ -872,17 +862,14 @@ class Testset(target.TargetBase, ProblemComponentMixin):
         """
         case_result = self._test_one_case(solution, testcase, ui)
         result.results[testcase] = case_result
-        if case_result.verdict not in (test.TestCaseResult.AC,
-                                       test.TestCaseResult.WA,
-                                       test.TestCaseResult.TLE,
-                                       test.TestCaseResult.RE):
+        if case_result.verdict not in ('AC', 'WA', 'TLE', 'RE'):
             result.Finalize(False,
                             '%s: Judge Error' %
                             os.path.basename(testcase.infile),
                             notable_testcase=testcase)
             ui.errors.Error(solution, result.detail)
             return False
-        elif case_result.verdict != test.TestCaseResult.AC:
+        elif case_result.verdict != 'AC':
             expected = not solution.IsCorrect()
             r = test.TestsetResult(
                 result.testset, result.solution, result.testcases)
@@ -895,7 +882,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                                         case_result.verdict),
                             notable_testcase=testcase)
             if solution.IsCorrect():
-                if case_result.verdict == test.TestCaseResult.WA:
+                if case_result.verdict == 'WA':
                     judgefile = os.path.join(
                         solution.out_dir,
                         os.path.splitext(
@@ -906,8 +893,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                                     (r.detail, judgefile))
                 else:
                     ui.errors.Error(solution, r.detail)
-            elif (solution.expected_verdicts is not None and
-                  case_result.verdict not in solution.expected_verdicts):
+            elif not solution.verdicts.is_expected(case_result.verdict):
                 r = test.TestsetResult(
                     result.testset, result.solution, result.testcases)
                 r.Finalize(False,
@@ -916,7 +902,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                             case_result.verdict),
                            notable_testcase=testcase)
                 ui.errors.Error(solution, r.detail)
-                if case_result.verdict == test.TestCaseResult.WA:
+                if case_result.verdict == 'WA':
                     judgefile = os.path.join(
                         solution.out_dir,
                         os.path.splitext(
@@ -982,8 +968,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                 case_result.verdict = [
                     verdict for verdict in
                     test.TestCaseResult.__dict__.values()
-                    if isinstance(verdict, test.TestVerdict) and
-                    verdict.msg == j['verdict']][0]
+                    if verdict == j['verdict']][0]
 
             return case_result
 
@@ -991,7 +976,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
 
         # always cache in json
         files.WriteFile(json.dumps({
-            'verdict': case_result.verdict.msg,
+            'verdict': case_result.verdict,
             'time': case_result.time
         }), cache_file_name)
 
@@ -1031,10 +1016,10 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                 timeout=testcase.timeout, precise=precise)
         if res.status == codes.RunResult.TLE:
             return test.TestCaseResult(
-                solution, test.TestCaseResult.TLE, time=None, cached=False)
+                solution, 'TLE', time=None, cached=False)
         if res.status != codes.RunResult.OK:
             return test.TestCaseResult(
-                solution, test.TestCaseResult.RE, time=None, cached=False)
+                solution, 'RE', time=None, cached=False)
 
         time = res.time
         for judge in self.judges:
@@ -1049,12 +1034,12 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                 judgefile=judgefile)
             if res.status == codes.RunResult.NG:
                 return test.TestCaseResult(
-                    solution, test.TestCaseResult.WA, time=None, cached=False)
+                    solution, 'WA', time=None, cached=False)
             elif res.status != codes.RunResult.OK:
                 return test.TestCaseResult(
-                    solution, test.TestVerdict('Validator %s' % res.status),
+                    solution, 'Validator %s' % res.status,
                     time=None, cached=False)
-        return test.TestCaseResult(solution, test.TestCaseResult.AC,
+        return test.TestCaseResult(solution, 'AC',
                                    time=time, cached=False)
 
     consts.INVALID_EXT = '.invalid'

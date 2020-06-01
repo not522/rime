@@ -1,4 +1,5 @@
 {
     "src":"main.cc",
-    "challenge_cases":["00-sample1.in"]
+    "challenge_cases":["00-sample1.in"],
+    "verdicts":["AC", "WA"]
 }

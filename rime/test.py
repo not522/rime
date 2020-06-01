@@ -3,13 +3,37 @@ import os.path
 from rime import consts
 
 
-class TestVerdict(object):
+class UnknownVerdictException(Exception):
+    def __init__(self, verdict):
+        self.verdict = verdict
 
-    def __init__(self, msg):
-        self.msg = msg
 
-    def __str__(self):
-        return self.msg
+class Verdicts(object):
+    def __init__(self, verdicts):
+        self.verdicts = []
+        self.options = ['AC']
+        if verdicts is None:
+            return
+        if not isinstance(verdicts, list):
+            verdicts = [verdicts]
+        for verdict in verdicts:
+            if ':' in verdict:
+                if verdict.count(':') != 1:
+                    raise UnknownVerdictException(verdict)
+                verdict, option = verdict.split(':')
+                if not self._valid_verdict(verdict) or option != 'option':
+                    raise UnknownVerdictException(verdict + ':' + option)
+                self.options.append(verdict)
+            else:
+                if not self._valid_verdict(verdict):
+                    raise UnknownVerdictException(verdict)
+                self.verdicts.append(verdict)
+
+    def _valid_verdict(self, verdict):
+        return verdict in ('AC', 'WA', 'TLE', 'RE')
+
+    def is_expected(self, verdict):
+        return (verdict in self.verdicts) or (verdict in self.options)
 
 
 class TestCase(object):
@@ -29,12 +53,6 @@ class TestCase(object):
 
 class TestCaseResult(object):
     """Testcase result."""
-
-    NA = TestVerdict('-')
-    AC = TestVerdict('Accepted')
-    WA = TestVerdict('Wrong Answer')
-    TLE = TestVerdict('Time Limit Exceeded')
-    RE = TestVerdict('Runtime Error')
 
     def __init__(self, solution, verdict, time, cached):
         self.solution = solution
@@ -57,8 +75,7 @@ class TestsetResult(object):
         self.testcases = testcases
         self.results = dict(
             [(testcase,
-              TestCaseResult(solution, TestCaseResult.NA,
-                             time=None, cached=False))
+              TestCaseResult(solution, 'NA', time=None, cached=False))
              for testcase in testcases])
         assert len(self.results) == len(testcases)
         self.finalized = False
@@ -79,14 +96,12 @@ class TestsetResult(object):
         return any((c.cached for c in self.results.values()))
 
     def IsAccepted(self):
-        return all((c.verdict == TestCaseResult.AC for c in
-                    self.results.values()))
+        return all((c.verdict == 'AC' for c in self.results.values()))
 
     def IsTimingValid(self, ui):
         """Checks if timing stats are valid."""
         return (self.results and
-                all((c.verdict == TestCaseResult.AC
-                     for c in self.results.values())))
+                all((c.verdict == 'AC' for c in self.results.values())))
 
     def GetTimeStats(self, ui):
         """Get time statistics."""

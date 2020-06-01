@@ -1,4 +1,5 @@
 {
     "src":"main.kt",
-    "challenge_cases":[]
+    "challenge_cases":[],
+    "verdicts":["AC", "WA"]
 }
