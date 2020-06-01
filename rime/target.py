@@ -31,8 +31,6 @@ class TargetBase(object):
         # Locate config file.
         self.config_file = os.path.join(base_dir, self.CONFIG_FILENAME)
 
-        self.exports = {}
-
     def Load(self, ui):
         """Loads configurations and do setups.
 

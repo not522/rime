@@ -39,9 +39,6 @@ class Code(object):
     # (e.g. prefix "foo" generates foo_solution, foo_generator, etc.)
     PREFIX = None
 
-    # Extensions of this type of source codes. Used to autodetect code types.
-    EXTENSIONS = None
-
     def __init__(self, src_name, src_dir, out_dir):
         self.src_name = src_name
         self.src_dir = src_dir
@@ -56,10 +53,6 @@ class Code(object):
 
     def Clean(self):
         raise NotImplementedError()
-
-
-class UnknownCodeExtensionException(Exception):
-    pass
 
 
 def get_code(src, src_dir, out_dir, *args, **kwargs):
@@ -188,20 +181,9 @@ class CodeBase(Code):
             status = RunResult.NG
         return RunResult(status, time)
 
-    def _ResetIO(self, *args):
-        for f in args:
-            if f is None:
-                continue
-            try:
-                f.seek(0)
-                f.truncate()
-            except IOError:
-                pass
-
 
 class CCode(CodeBase):
     PREFIX = 'c'
-    EXTENSIONS = ['c']
 
     def __init__(self, src_name, src_dir, out_dir, flags=['-O2', '-lm'],
                  **kwargs):
@@ -217,7 +199,6 @@ class CCode(CodeBase):
 
 class CXXCode(CodeBase):
     PREFIX = 'cxx'
-    EXTENSIONS = ['cc', 'cxx']
 
     def __init__(self, src_name, src_dir, out_dir,
                  flags=['-std=c++11', '-O2'], **kwargs):
@@ -233,7 +214,6 @@ class CXXCode(CodeBase):
 
 class KotlinCode(CodeBase):
     PREFIX = 'kotlin'
-    EXTENSIONS = ['kt']
 
     def __init__(self, src_name, src_dir, out_dir,
                  compile_flags=[], run_flags=[], **kwargs):
@@ -251,7 +231,6 @@ class KotlinCode(CodeBase):
 
 class JavaCode(CodeBase):
     PREFIX = 'java'
-    EXTENSIONS = ['java']
 
     def __init__(self, src_name, src_dir, out_dir,
                  compile_flags=[], run_flags=[],
@@ -275,7 +254,6 @@ class JavaCode(CodeBase):
 
 class RustCode(CodeBase):
     PREFIX = 'rust'
-    EXTENSIONS = ['rs']
 
     def __init__(self, src_name, src_dir, out_dir,
                  flags=['-C', 'opt-level=2'], **kwargs):
@@ -292,7 +270,6 @@ class RustCode(CodeBase):
 class ScriptCode(CodeBase):
     QUIET_COMPILE = True
     PREFIX = 'script'
-    EXTENSIONS = ['sh', 'pl', 'py', 'rb']
 
     def __init__(self, src_name, src_dir, out_dir, run_flags=[], **kwargs):
         super(ScriptCode, self).__init__(
@@ -348,7 +325,6 @@ class ScriptCode(CodeBase):
 class JavaScriptCode(CodeBase):
     QUIET_COMPILE = True
     PREFIX = 'js'
-    EXTENSIONS = ['js']
 
     def __init__(self, src_name, src_dir, out_dir, run_flags=[], **kwargs):
         super(JavaScriptCode, self).__init__(
@@ -368,7 +344,6 @@ class JavaScriptCode(CodeBase):
 
 class HaskellCode(CodeBase):
     PREFIX = 'hs'
-    EXTENSIONS = ['hs']
 
     def __init__(self, src_name, src_dir, out_dir, flags=[], **kwargs):
         exe_name = os.path.splitext(src_name)[0] + consts.EXE_EXT
@@ -383,7 +358,6 @@ class HaskellCode(CodeBase):
 
 class CsCode(CodeBase):
     PREFIX = 'cs'
-    EXTENSIONS = ['cs']
 
     def __init__(self, src_name, src_dir, out_dir, flags=[], **kwargs):
         exe_name = os.path.splitext(src_name)[0] + consts.EXE_EXT
