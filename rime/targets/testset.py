@@ -927,7 +927,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
         for testcase in testcases:
             result = self._test_solution_with_all_cases_one(
                 solution, testcase, result, ui)
-            if not result and not ui.options['keep_goin']:
+            if not result and not ui.options['keep_going']:
                 break
         if not result.IsFinalized():
             result.Finalize(True, 'okay')
