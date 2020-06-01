@@ -7,7 +7,6 @@ from rime import codes
 from rime import commands
 from rime import consts
 from rime import target
-from rime import taskgraph
 from rime import test
 from rime.targets.problem_component_mixin import ProblemComponentMixin
 from rime.targets import problem
@@ -404,7 +403,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                 self, '%s: Compile Error (%s)' %
                 (validator.src_name, res.status))
             ui.console.PrintLog(validator.ReadCompileLog())
-            raise taskgraph.Bailout([False])
+            return False
         return True
 
     def _run_validators(self, ui):
@@ -1094,25 +1093,18 @@ class Testset(target.TargetBase, ProblemComponentMixin):
             progress=True)
         return True
 
-    @taskgraph.task_method
     def Pack(self, ui):
         if not self.build(ui):
-            yield False
+            return False
         if self.project.judge_system.name == 'AOJ':
-            results = yield taskgraph.TaskBranch(
-                [commands.AOJPacker().Pack(ui, self)])
-            yield all(results)
+            return commands.AOJPacker().Pack(ui, self)
         elif self.project.judge_system.name == 'AtCoder':
-            results = yield taskgraph.TaskBranch(
-                [commands.AtCoderPacker().Pack(ui, self)])
-            yield all(results)
+            return commands.AtCoderPacker().Pack(ui, self)
         elif self.project.judge_system.name == 'HackerRank':
-            results = yield taskgraph.TaskBranch(
-                [commands.HackerRankPacker().Pack(ui, self)])
-            yield all(results)
+            return commands.HackerRankPacker().Pack(ui, self)
         else:
             ui.errors.Error(self, "Pack nothing.")
-            yield False
+            return False
 
     def clean(self, ui):
         """Clean the testset."""

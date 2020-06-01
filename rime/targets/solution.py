@@ -1,7 +1,6 @@
 from rime.commands import AtCoderSubmitter
 from rime import codes
 from rime import target
-from rime import taskgraph
 from rime import test
 from rime.targets.problem_component_mixin import ProblemComponentMixin
 from rime.targets import problem
@@ -82,17 +81,14 @@ class Solution(target.TargetBase, ProblemComponentMixin):
             results.append(testset.test_solution(self, ui))
         return results
 
-    @taskgraph.task_method
     def Submit(self, ui):
         if not self.build(ui):
-            yield False
+            return False
         if self.project.judge_system.name == 'AtCoder':
-            results = yield taskgraph.TaskBranch(
-                [AtCoderSubmitter().Submit(ui, self)])
-            yield all(results)
+            return AtCoderSubmitter().Submit(ui, self)
         else:
             ui.errors.Error(self, "Submit nothing.")
-            yield False
+            return False
 
     def clean(self, ui):
         """Clean the solution."""

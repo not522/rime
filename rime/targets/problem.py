@@ -1,10 +1,8 @@
-import itertools
 import os.path
 
 from rime.commands import AtCoderUploader
 from rime import consts
 from rime import target
-from rime import taskgraph
 from rime.targets.solution import Solution
 from rime.targets.testset import Testset
 from rime.util import files
@@ -141,47 +139,43 @@ class Problem(target.TargetBase):
             results += testset.test(ui)
         return results
 
-    @taskgraph.task_method
-    def TestSolution(self, solution, ui):
+    def test_solution(self, solution, ui):
         """Run tests in the problem."""
-        results = yield taskgraph.TaskBranch(
-            [testset.TestSolution(solution, ui) for testset in self.testsets])
-        yield list(itertools.chain(*results))
+        results = []
+        for testset in self.testsets:
+            results += testset.test_solution(solution, ui)
+        return results
 
-    @taskgraph.task_method
     def Pack(self, ui):
-        results = yield taskgraph.TaskBranch(
-            [testset.Pack(ui) for testset in self.testsets])
-        yield all(results)
+        results = []
+        for testset in self.testsets:
+            results.append(testset.Pack(ui))
+        return all(results)
 
-    @taskgraph.task_method
     def Upload(self, ui):
-        if not (yield self.Pack(ui)):
-            yield False
+        if not self.Pack(ui):
+            return False
         if self.project.judge_system.name == 'AtCoder':
-            results = yield taskgraph.TaskBranch(
-                [AtCoderUploader().Upload(ui, self, not ui.options['upload'])])
-            yield all(results)
+            return AtCoderUploader().Upload(ui, self, not ui.options['upload'])
         else:
             ui.errors.Error(self, "Upload nothing.")
-            yield False
+            return False
 
-    @taskgraph.task_method
     def Submit(self, ui):
         if self.atcoder_task_id is None:
             ui.console.PrintAction(
                 'SUBMIT', self,
                 'This problem is considered to a spare. Not submitted.')
-            yield True
+            return True
 
-        results = yield taskgraph.TaskBranch(
-            [solution.Submit(ui) for solution in self.solutions])
-        yield all(results)
+        results = []
+        for solution in self.solutions:
+            results.append(solution.Submit(ui))
+        return all(results)
 
-    @taskgraph.task_method
     def Add(self, args, ui):
         if len(args) != 2:
-            yield None
+            return None
         ttype = args[0].lower()
         name = args[1]
         if ttype == 'solution':
@@ -208,9 +202,9 @@ class Problem(target.TargetBase):
 #expected_score(100)
 '''
             newdir = os.path.join(self.base_dir, name)
-            if(os.path.exists(newdir)):
+            if os.path.exists(newdir):
                 ui.errors.Error(self, "{0} already exists.".format(newdir))
-                yield None
+                return None
             os.makedirs(newdir)
             target.EditFile(os.path.join(newdir, 'SOLUTION'), content)
             ui.console.PrintAction('ADD', None, '%s/SOLUTION' % newdir)
@@ -261,9 +255,9 @@ id='{0}'
 #scoring_judge()
 '''
             newdir = os.path.join(self.base_dir, name)
-            if(os.path.exists(newdir)):
+            if os.path.exists(newdir):
                 ui.errors.Error(self, "{0} already exists.".format(newdir))
-                yield None
+                return None
             os.makedirs(newdir)
             target.EditFile(os.path.join(newdir, 'TESTSET'),
                             content.format(self.id))
@@ -272,7 +266,7 @@ id='{0}'
             ui.errors.Error(self,
                             "Target type {0} cannot be put here.".format(
                                 ttype))
-            yield None
+            return None
 
     def clean(self, ui):
         """Clean the problem."""

@@ -12,7 +12,6 @@ from six.moves import urllib
 from rime import codes
 from rime import consts
 from rime import target
-from rime import taskgraph
 from rime import test
 from rime.targets.problem import Problem
 from rime.util import files
@@ -191,23 +190,23 @@ class Project(target.TargetBase):
             results += problem.test(ui)
         return results
 
-    @taskgraph.task_method
     def Pack(self, ui):
-        results = yield taskgraph.TaskBranch(
-            [problem.Pack(ui) for problem in self.problems])
-        yield all(results)
+        results = []
+        for problem in self.problems:
+            results.append(problem.Pack(ui))
+        return all(results)
 
-    @taskgraph.task_method
     def Upload(self, ui):
         if self.judge_system.name == 'AtCoder':
             script = os.path.join(self.judge_system.upload_script)
             if not os.path.exists(os.path.join(self.base_dir, script)):
                 ui.errors.Error(self, script + ' is not found.')
-                yield False
+                return False
 
-        results = yield taskgraph.TaskBranch(
-            [problem.Upload(ui) for problem in self.problems])
-        yield all(results)
+        results = []
+        for problem in self.problems:
+            results.append(problem.Upload(ui))
+        return all(results)
 
     def _Request(self, path, data=None):
         if type(data) == dict:
@@ -222,16 +221,15 @@ class Project(target.TargetBase):
                            'password': self.judge_system.password})
             self.judge_system.logined = True
 
-    @taskgraph.task_method
     def Submit(self, ui):
-        results = yield taskgraph.TaskBranch(
-            [problem.Submit(ui) for problem in self.problems])
-        yield all(results)
+        results = []
+        for problem in self.problems:
+            results.append(problem.Submit(ui))
+        return all(results)
 
-    @taskgraph.task_method
     def Add(self, args, ui):
         if len(args) != 2:
-            yield None
+            return None
         ttype = args[0].lower()
         name = args[1]
         if ttype == 'problem':
@@ -241,9 +239,9 @@ class Project(target.TargetBase):
 }
 '''
             newdir = os.path.join(self.base_dir, name)
-            if(os.path.exists(newdir)):
+            if os.path.exists(newdir):
                 ui.errors.Error(self, "{0} already exists.".format(newdir))
-                yield None
+                return None
             os.makedirs(newdir)
             target.EditFile(os.path.join(newdir, 'PROBLEM'), content)
             ui.console.PrintAction('ADD', None, '%s/PROBLEM' % newdir)
@@ -251,21 +249,19 @@ class Project(target.TargetBase):
             ui.errors.Error(self,
                             "Target type {0} cannot be put here.".format(
                                 ttype))
-            yield None
+            return None
 
-    @taskgraph.task_method
     def Wikify(self, ui):
         if self.wikify_config is None:
             ui.errors.Error(self, 'wikify_config is not defined.')
-            yield None
-        wiki = yield self._GenerateWiki(ui)
+            return None
+        wiki = self._GenerateWiki(ui)
         self._UploadWiki(wiki, ui)
-        yield None
+        return None
 
-    @taskgraph.task_method
     def _GenerateWiki(self, ui):
         if not ui.options['skip_clean']:
-            yield self.Clean(ui)
+            self.clean(ui)
 
         # Get system information.
         rev = builtin_commands.getoutput('svnversion')
@@ -277,13 +273,12 @@ class Project(target.TargetBase):
                 {'rev': rev, 'username': username, 'hostname': hostname})
         wiki += u'|||CENTER:|CENTER:|CENTER:|CENTER:|CENTER:|c\n'
         wiki += u'|~問題|~担当|~解答|~入力|~出力|~入検|~出検|\n'
-        results = yield taskgraph.TaskBranch([
-            self._GenerateWikiOne(problem, ui)
-            for problem in self.problems])
+        results = []
+        for problem in self.problems:
+            results.append(self._GenerateWikiOne(problem, ui))
         wiki += ''.join(results)
-        yield wiki
+        return wiki
 
-    @taskgraph.task_method
     def _GenerateWikiOne(self, problem, ui):
         # Get status.
         title = SafeUnicode(problem.wikify_config.title)
@@ -293,7 +288,7 @@ class Project(target.TargetBase):
             assignees = ','.join(assignees)
         assignees = SafeUnicode(assignees)
         # Fetch test results.
-        results = yield problem.Test(ui)
+        results = problem.test(ui)
         # Get various information about the problem.
         num_solutions = len(results)
         num_tests = len(problem.testset.ListTestCases())
@@ -342,7 +337,7 @@ class Project(target.TargetBase):
         else:
             cell_judge = CELL_NA
         # Done.
-        yield (u'|[[{}>{}]]|{}|{}|{}|{}|{}|{}|\n'.format(
+        return (u'|[[{}>{}]]|{}|{}|{}|{}|{}|{}|\n'.format(
             title, page, assignees, cell_solutions, cell_input,
             cell_output, cell_validator, cell_judge))
 
@@ -389,19 +384,16 @@ class Project(target.TargetBase):
         urllib.request.urlopen(
             url, urllib.parse.urlencode(update_params).encode(encoding))
 
-    @taskgraph.task_method
     def WikifyFull(self, ui):
         if self.wikify_config is None:
             ui.errors.Error(self, 'wikify_config is not defined.')
-            yield None
-        wikiFull = yield self._GenerateWikiFull(ui)
+            return None
+        wikiFull = self._GenerateWikiFull(ui)
         self._UploadWiki(wikiFull, ui)
-        yield None
 
-    @taskgraph.task_method
     def _GenerateWikiFull(self, ui):
         if not ui.options['skip_clean']:
-            yield self.Clean(ui)
+            self.clean(ui)
 
         # Get system information.
         rev = SafeUnicode(builtin_commands.getoutput(
@@ -416,10 +408,10 @@ class Project(target.TargetBase):
 
         wikiFull = u'** Detail\n'
 
-        results = yield taskgraph.TaskBranch([
-            self._GenerateWikiFullOne(problem, ui)
-            for problem in self.problems])
-        (wikiResults, wikiFullResults) = zip(*results)
+        results = []
+        for problem in self.problems:
+            results.append(self._GenerateWikiFullOne(problem, ui))
+        wikiResults, wikiFullResults = zip(*results)
         wiki += ''.join(wikiResults)
         wikiFull += ''.join(wikiFullResults)
 
@@ -457,13 +449,12 @@ class Project(target.TargetBase):
                 errors += '--' + e + '\n'
         errors = SafeUnicode(errors)
 
-        yield (u'#contents\n' +
-               (u'このセクションは Rime により自動生成されています '
-                u'(rev.%(rev)s, uploaded by %(username)s @ %(hostname)s)\n' %
-                {'rev': rev, 'username': username, 'hostname': hostname}
-                ) + wiki + environments + errors + wikiFull)
+        return (u'#contents\n' +
+                (u'このセクションは Rime により自動生成されています '
+                 u'(rev.%(rev)s, uploaded by %(username)s @ %(hostname)s)\n' %
+                 {'rev': rev, 'username': username, 'hostname': hostname})
+                + wiki + environments + errors + wikiFull)
 
-    @taskgraph.task_method
     def _GenerateWikiFullOne(self, problem, ui):
         result = problem.Build(ui)
         if not result:
@@ -498,9 +489,9 @@ class Project(target.TargetBase):
         results = []
         for solution in solutions:
             name = solution.name
-            test_result = (yield problem.testset.TestSolution(solution, ui))[0]
+            test_result = problem.testset.test_solution(solution, ui)[0]
             results.append(test_result)
-            for (testcase, result) in test_result.results.items():
+            for testcase, result in test_result.results.items():
                 testname = os.path.splitext(
                     os.path.basename(testcase.infile))[0]
                 dics.setdefault(testname, {})[name] = (
@@ -530,9 +521,6 @@ class Project(target.TargetBase):
                 ) +
                 '|\n')
         wikiFull += ''.join(rows)
-
-        # Fetch test results.
-        # results = yield problem.Test(ui)
 
         # Get various information about the problem.
         num_solutions = len(results)
@@ -592,7 +580,7 @@ class Project(target.TargetBase):
             title, page, assignees, cell_solutions, cell_input,
             cell_output, cell_validator, cell_judge))
 
-        yield (wiki, wikiFull)
+        return wiki, wikiFull
 
     def _GetMessage(self, verdict, time):
         if verdict is test.TestCaseResult.NA:
@@ -602,16 +590,13 @@ class Project(target.TargetBase):
         else:
             return BGCOLOR_GOOD + '%.2fs' % (time)
 
-    @taskgraph.task_method
     def HtmlifyFull(self, ui):
-        htmlFull = yield self._GenerateHtmlFull(ui)
+        htmlFull = self._GenerateHtmlFull(ui)
         codecs.open("summary.html", 'w', 'utf8').write(htmlFull)
-        yield None
 
-    @taskgraph.task_method
     def _GenerateHtmlFull(self, ui):
         if not ui.options['skip_clean']:
-            yield self.Clean(ui)
+            self.clean(ui)
 
         # Get system information.
         rev = SafeUnicode(builtin_commands.getoutput(
@@ -636,10 +621,10 @@ class Project(target.TargetBase):
 
         htmlFull = u'<h2>Detail</h2>\n'
 
-        results = yield taskgraph.TaskBranch([
-            self._GenerateHtmlFullOne(problem, ui)
-            for problem in self.problems])
-        (htmlResults, htmlFullResults) = zip(*results)
+        results = []
+        for problem in self.problems:
+            results.append(self._GenerateHtmlFullOne(problem, ui))
+        htmlResults, htmlFullResults = zip(*results)
         html += '<tbody>' + ''.join(htmlResults) + '</tbody></table>\n'
         htmlFull += ''.join(htmlFullResults)
 
@@ -686,9 +671,8 @@ class Project(target.TargetBase):
                 errors += '</ul></dd>\n'
             errors += '</dl>\n'
 
-        yield header + info + html + environments + errors + htmlFull + footer
+        return header + info + html + environments + errors + htmlFull + footer
 
-    @taskgraph.task_method
     def _GenerateHtmlFullOne(self, problem, ui):
         result = problem.build(ui)
         if not result:
@@ -720,9 +704,9 @@ class Project(target.TargetBase):
         results = []
         for solution in solutions:
             name = solution.name
-            test_result = (yield problem.testset.TestSolution(solution, ui))[0]
+            test_result = problem.testset.test_solution(solution, ui)[0]
             results.append(test_result)
-            for (testcase, result) in test_result.results.items():
+            for testcase, result in test_result.results.items():
                 testname = os.path.splitext(
                     os.path.basename(testcase.infile))[0]
                 dics.setdefault(testname, {})[name] = (
@@ -753,9 +737,6 @@ class Project(target.TargetBase):
                 '</td></tr>\n')
         htmlFull += ''.join(rows)
         htmlFull += '</tbody></table>'
-
-        # Fetch test results.
-        # results = yield problem.Test(ui)
 
         # Get various information about the problem.
         num_solutions = len(results)
@@ -816,7 +797,7 @@ class Project(target.TargetBase):
                     title, assignees, cell_solutions, cell_input,
                     cell_output, cell_validator, cell_judge))
 
-        yield (html, htmlFull)
+        return html, htmlFull
 
     def _GetHtmlifyMessage(self, verdict, time):
         if verdict is test.TestCaseResult.NA:

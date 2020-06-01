@@ -6,7 +6,6 @@ import traceback
 
 from rime import commands as commands_mod
 from rime import targets
-from rime import taskgraph
 from rime import ui as ui_mod
 from rime.util import console as console_mod
 
@@ -58,8 +57,6 @@ def InternalMain(argv):
     if options['quiet']:
         console.set_quiet()
 
-    graph = taskgraph.SerialTaskGraph()
-
     ui = ui_mod.UiContext(options, console, commands)
 
     if options['help']:
@@ -80,11 +77,8 @@ def InternalMain(argv):
         return 1
 
     # Run the task.
-    task = None
     try:
-        task = cmd.Run(project, tuple(args), ui)
-        if isinstance(task, taskgraph.Task):
-            graph.Run(task)
+        cmd.Run(project, tuple(args), ui)
     except KeyboardInterrupt:
         if ui.options['debug'] >= 1:
             traceback.print_exc()

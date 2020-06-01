@@ -7,7 +7,6 @@ import time
 from rime import codes
 from rime import consts
 from rime import task
-from rime import taskgraph
 from rime import test_summary
 from rime.util import files
 
@@ -338,19 +337,16 @@ class Test(CommandBase):
 
 
 class PackerBase(object):
-    @taskgraph.task_method
     def Pack(self, ui, testset):
         raise NotImplementedError()
 
 
 class UploaderBase(object):
-    @taskgraph.task_method
     def Upload(self, ui, problem, dryrun):
         raise NotImplementedError()
 
 
 class SubmitterBase(object):
-    @taskgraph.task_method
     def Submit(self, ui, solution):
         raise NotImplementedError()
 
@@ -508,7 +504,6 @@ class HtmlifyFull(CommandBase):
 
 
 class AOJPacker(PackerBase):
-    @taskgraph.task_method
     def Pack(self, ui, testset):
         testcases = testset.ListTestCases()
         try:
@@ -516,7 +511,7 @@ class AOJPacker(PackerBase):
             files.MakeDir(testset.aoj_pack_dir)
         except Exception:
             ui.errors.Exception(testset)
-            yield False
+            return False
         for (i, testcase) in enumerate(testcases):
             basename = os.path.splitext(testcase.infile)[0]
             difffile = basename + consts.DIFF_EXT
@@ -542,7 +537,7 @@ class AOJPacker(PackerBase):
                                             packed_difffile))
             except Exception:
                 ui.errors.Exception(testset)
-                yield False
+                return False
 
         # case.txt
         files.WriteFile(str(len(testcases)),
@@ -566,7 +561,7 @@ class AOJPacker(PackerBase):
         elif len(testset.judges) > 1:
             ui.errors.Error(
                 testset, "Multiple output checker is not supported!")
-            yield False
+            return False
 
         # AOJCONF
         aoj_conf = '''\
@@ -608,11 +603,10 @@ PUBLICATION_DATE = datetime.datetime(*, *, *, *, *)
                     'JUDGE_TYPE = \'diff-validator\'', testset.problem.title),
                 os.path.join(testset.aoj_pack_dir, 'AOJCONF'))
 
-        yield True
+        return True
 
 
 class AtCoderPacker(PackerBase):
-    @taskgraph.task_method
     def Pack(self, ui, testset):
         testcases = testset.ListTestCases()
         try:
@@ -623,7 +617,7 @@ class AtCoderPacker(PackerBase):
             files.MakeDir(os.path.join(testset.atcoder_pack_dir, 'etc'))
         except Exception:
             ui.errors.Exception(testset)
-            yield False
+            return False
         for (i, testcase) in enumerate(testcases):
             basename = os.path.splitext(testcase.infile)[0]
             difffile = basename + consts.DIFF_EXT
@@ -649,7 +643,7 @@ class AtCoderPacker(PackerBase):
                                             packed_difffile))
             except Exception:
                 ui.errors.Exception(testset)
-                yield False
+                return False
 
         # checker
         checker = testset.judges[0]
@@ -668,7 +662,7 @@ class AtCoderPacker(PackerBase):
         elif len(testset.judges) > 1:
             ui.errors.Error(
                 testset, "Multiple output checker is not supported!")
-            yield False
+            return False
 
         # reactive
         if len(testset.reactives) == 1:
@@ -687,7 +681,7 @@ class AtCoderPacker(PackerBase):
         elif len(testset.judges) > 1:
             ui.errors.Error(
                 testset, "Multiple reactive checker is not supported!")
-            yield False
+            return False
 
         # score.txt
         subtasks = testset.subtask_testcases
@@ -701,11 +695,10 @@ class AtCoderPacker(PackerBase):
         files.WriteFile(
             score, os.path.join(testset.atcoder_pack_dir, 'etc', 'score.txt'))
 
-        yield True
+        return True
 
 
 class HackerRankPacker(PackerBase):
-    @taskgraph.task_method
     def Pack(self, ui, testset):
         testcases = testset.ListTestCases()
         try:
@@ -715,7 +708,7 @@ class HackerRankPacker(PackerBase):
             files.MakeDir(os.path.join(testset.pack_dir, 'output'))
         except Exception:
             ui.errors.Exception(testset)
-            yield False
+            return False
         template_packed_infile = 'input{:d}.txt'
         template_packed_difffile = 'output{:d}.txt'
         for i, testcase in enumerate(testcases):
@@ -746,7 +739,7 @@ class HackerRankPacker(PackerBase):
                                             packed_difffile))
             except Exception:
                 ui.errors.Exception(testset)
-                yield False
+                return False
 
         # hacker_rank.zip
         try:
@@ -758,34 +751,33 @@ class HackerRankPacker(PackerBase):
                 'PACK', testset, 'zipped to hacker_rank.zip', progress=True)
         except Exception:
             ui.errors.Exception(testset)
-            yield False
+            return False
 
-        yield True
+        return True
 
 
 class AtCoderUploader(UploaderBase):
-    @taskgraph.task_method
     def Upload(self, ui, problem, dryrun):
         if problem.project.judge_system.name != 'AtCoder':
             ui.errors.Error(
                 problem, 'judge_system is not defined in project.json.')
-            yield False
+            return False
 
         if problem.atcoder_task_id is None:
             ui.console.PrintAction(
                 'UPLOAD', problem,
                 'This problem is considered to a spare. Not uploaded.')
-            yield True
+            return True
 
         script = os.path.join(problem.project.judge_system.upload_script)
         if not os.path.exists(os.path.join(problem.project.base_dir, script)):
             ui.errors.Error(problem, script + ' is not found.')
-            yield False
+            return False
 
         stmp = files.ReadFile(script)
         if not stmp.startswith('#!/usr/bin/php'):
             ui.errors.Error(problem, script + ' is not an upload script.')
-            yield False
+            return False
 
         log = os.path.join(problem.out_dir, 'upload_log')
 
@@ -808,23 +800,22 @@ class AtCoderUploader(UploaderBase):
                     stdin=devnull, stdout=logfile, stderr=logfile)
             except Exception:
                 ui.errors.Exception(problem)
-                yield False
+                return False
             ret = proc.returncode
             if ret != 0:
                 ui.errors.Error(problem, 'upload failed: ret = %d' % ret)
-                yield False
+                return False
             ui.console.PrintAction(
                 'UPLOAD', problem, str(problem.atcoder_task_id))
-            yield True
+            return True
 
 
 class AtCoderSubmitter(SubmitterBase):
-    @taskgraph.task_method
     def Submit(self, ui, solution):
         if solution.project.judge_system.name != 'AtCoder':
             ui.errors.Error(
                 solution, 'judge_system is not defined in project.json.')
-            yield False
+            return False
 
         solution.project._Login()
 
@@ -871,7 +862,7 @@ class AtCoderSubmitter(SubmitterBase):
         ui.console.PrintAction(
             'SUBMIT', solution, '{0} {1}'.format(result, expected))
 
-        yield True
+        return True
 
 
 class Clean(CommandBase):
