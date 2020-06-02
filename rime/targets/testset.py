@@ -255,7 +255,6 @@ class Testset(target.TargetBase, ProblemComponentMixin):
 
         self.scoring_judge = config.get('scoring_judge', False)
 
-    def PostLoad(self, ui):
         if not self.judges:
             self.judges.append(codes.InternalDiffCode())
 

@@ -149,7 +149,6 @@ class Project(target.TargetBase):
 
         self.judge_system = JudgeSystem(config.get('judge_system'))
 
-    def PostLoad(self, ui):
         self._ChainLoad(ui)
 
     def _ChainLoad(self, ui):

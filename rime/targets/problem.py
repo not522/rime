@@ -47,7 +47,6 @@ class Problem(target.TargetBase):
 
         self.atcoder_task_id = config.get('atcoder_task_id')
 
-    def PostLoad(self, ui):
         self._ChainLoad(ui)
         self._ParseSettings(ui)
 

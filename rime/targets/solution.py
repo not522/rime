@@ -26,9 +26,6 @@ class Solution(target.TargetBase, ProblemComponentMixin):
         self.verdicts = test.Verdicts(config.get('verdicts'))
         self.expected_score = config.get('expected_score')
 
-    def PostLoad(self, ui):
-        pass
-
     def IsCorrect(self):
         """Returns whether this is correct solution."""
         return self.challenge_cases is None

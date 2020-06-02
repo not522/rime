@@ -41,7 +41,6 @@ class TargetBase(object):
             with open(self.config_file) as f:
                 config = json.load(f)
             self.PreLoad(ui, config)
-            self.PostLoad(ui)
         except Exception as e:
             # TODO(nya): print pretty file/lineno for debug
             raise ConfigurationError(e)
