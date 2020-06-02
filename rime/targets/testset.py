@@ -336,25 +336,25 @@ class Testset(target.TargetBase, ProblemComponentMixin):
             return False
         return True
 
+    def _compile(self, code, ui):
+        """Compile a single code."""
+        if not code.QUIET_COMPILE:
+            ui.console.PrintAction('COMPILE', self, code.src_name)
+        res = code.Compile()
+        if res.status != codes.RunResult.OK:
+            ui.errors.Error(
+                self, '%s: Compile Error (%s)' %
+                (code.src_name, res.status))
+            ui.console.PrintLog(code.ReadCompileLog())
+            return False
+        return True
+
     def _compile_generators(self, ui):
         """Compile all input generators."""
         results = []
         for generator in self.generators:
-            results.append(self._compile_generator_one(generator, ui))
+            results.append(self._compile(generator, ui))
         return all(results)
-
-    def _compile_generator_one(self, generator, ui):
-        """Compile a single input generator."""
-        if not generator.QUIET_COMPILE:
-            ui.console.PrintAction('COMPILE', self, generator.src_name)
-        res = generator.Compile()
-        if res.status != codes.RunResult.OK:
-            ui.errors.Error(
-                self, '%s: Compile Error (%s)' %
-                (generator.src_name, res.status))
-            ui.console.PrintLog(generator.ReadCompileLog())
-            return False
-        return True
 
     def _run_generators(self, ui):
         """Run all input generators."""
@@ -389,21 +389,8 @@ class Testset(target.TargetBase, ProblemComponentMixin):
         """Compile input validators."""
         results = []
         for validator in self.validators:
-            results.append(self._compile_validator_one(validator, ui))
+            results.append(self._compile(validator, ui))
         return all(results)
-
-    def _compile_validator_one(self, validator, ui):
-        """Compile a single input validator."""
-        if not validator.QUIET_COMPILE:
-            ui.console.PrintAction('COMPILE', self, validator.src_name)
-        res = validator.Compile()
-        if res.status != codes.RunResult.OK:
-            ui.errors.Error(
-                self, '%s: Compile Error (%s)' %
-                (validator.src_name, res.status))
-            ui.console.PrintLog(validator.ReadCompileLog())
-            return False
-        return True
 
     def _run_validators(self, ui):
         """Run input validators."""
@@ -461,26 +448,14 @@ class Testset(target.TargetBase, ProblemComponentMixin):
         """Compile all judges."""
         results = []
         for judge in self.judges:
-            results.append(self._compile_judge_one(judge, ui))
+            results.append(self._compile(judge, ui))
         if not all(results):
             return False
 
         results = []
         for reactive in self.reactives:
-            results.append(self._compile_reactive_one(reactive, ui))
+            results.append(self._compile(reactive, ui))
         return all(results)
-
-    def _compile_judge_one(self, judge, ui):
-        """Compile a single judge."""
-        if not judge.QUIET_COMPILE:
-            ui.console.PrintAction('COMPILE', self, judge.src_name)
-        res = judge.Compile()
-        if res.status != codes.RunResult.OK:
-            ui.errors.Error(
-                self, '%s: Compile Error (%s)' % (judge.src_name, res.status))
-            ui.console.PrintLog(judge.ReadCompileLog())
-            return False
-        return True
 
     def _compile_reference_solution(self, ui):
         """Compile the reference solution."""
@@ -489,18 +464,6 @@ class Testset(target.TargetBase, ProblemComponentMixin):
             ui.errors.Error(self, 'Reference solution unavailable')
             return False
         return reference_solution.build(ui)
-
-    def _compile_reactive_one(self, reactive, ui):
-        """Compile a single reative."""
-        if not reactive.QUIET_COMPILE:
-            ui.console.PrintAction('COMPILE', self, reactive.src_name)
-        res = reactive.Compile()
-        if res.status != codes.RunResult.OK:
-            ui.errors.Error(self, '%s: Compile Error (%s)'
-                            % (reactive.src_name, res.status))
-            ui.console.PrintLog(reactive.ReadCompileLog())
-            return False
-        return True
 
     def _run_reference_solution(self, ui):
         """Run the reference solution to generate reference outputs."""
