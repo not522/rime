@@ -303,11 +303,13 @@ class Testset(target.TargetBase, ProblemComponentMixin):
             return True
         if not self._init_output_dir(ui):
             return False
-        if not self._compile_generators(ui):
+        if not self._compile_sources(self.generators, ui):
             return False
-        if not self._compile_validators(ui):
+        if not self._compile_sources(self.validators, ui):
             return False
-        if not self._compile_judges(ui):
+        if not self._compile_sources(self.judges, ui):
+            return False
+        if not self._compile_sources(self.reactives, ui):
             return False
         if not self._run_generators(ui):
             return False
@@ -336,24 +338,24 @@ class Testset(target.TargetBase, ProblemComponentMixin):
             return False
         return True
 
-    def _compile(self, code, ui):
-        """Compile a single code."""
-        if not code.QUIET_COMPILE:
-            ui.console.PrintAction('COMPILE', self, code.src_name)
-        res = code.Compile()
+    def _compile(self, source, ui):
+        """Compile a single sources."""
+        if not source.QUIET_COMPILE:
+            ui.console.PrintAction('COMPILE', self, source.src_name)
+        res = source.Compile()
         if res.status != codes.RunResult.OK:
             ui.errors.Error(
                 self, '%s: Compile Error (%s)' %
-                (code.src_name, res.status))
-            ui.console.PrintLog(code.ReadCompileLog())
+                (source.src_name, res.status))
+            ui.console.PrintLog(source.ReadCompileLog())
             return False
         return True
 
-    def _compile_generators(self, ui):
-        """Compile all input generators."""
+    def _compile_sources(self, sources, ui):
+        """Compile all sources."""
         results = []
-        for generator in self.generators:
-            results.append(self._compile(generator, ui))
+        for source in sources:
+            results.append(self._compile(source, ui))
         return all(results)
 
     def _run_generators(self, ui):
@@ -384,13 +386,6 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                             '%s: %s' % (generator.src_name, res.status))
             return False
         return True
-
-    def _compile_validators(self, ui):
-        """Compile input validators."""
-        results = []
-        for validator in self.validators:
-            results.append(self._compile(validator, ui))
-        return all(results)
 
     def _run_validators(self, ui):
         """Run input validators."""
@@ -443,19 +438,6 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                                    testcase.infile),
                                progress=True)
         return True
-
-    def _compile_judges(self, ui):
-        """Compile all judges."""
-        results = []
-        for judge in self.judges:
-            results.append(self._compile(judge, ui))
-        if not all(results):
-            return False
-
-        results = []
-        for reactive in self.reactives:
-            results.append(self._compile(reactive, ui))
-        return all(results)
 
     def _compile_reference_solution(self, ui):
         """Compile the reference solution."""
