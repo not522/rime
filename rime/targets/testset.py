@@ -214,17 +214,17 @@ class Testset(target.TargetBase, ProblemComponentMixin):
             self.generators.append(codes.get_code(
                 src_dir=self.src_dir, out_dir=self.out_dir, **generator))
 
-        for generator in config['validator']:
+        for validator in config['validator']:
             self.validators.append(codes.get_code(
-                src_dir=self.src_dir, out_dir=self.out_dir, **generator))
+                src_dir=self.src_dir, out_dir=self.out_dir, **validator))
 
-        for generator in config.get('judge', []):
+        for judge in config.get('judge', []):
             self.judges.append(codes.get_code(
-                src_dir=self.src_dir, out_dir=self.out_dir, **generator))
+                src_dir=self.src_dir, out_dir=self.out_dir, **judge))
 
-        for generator in config.get('reactive', []):
+        for reactive in config.get('reactive', []):
             self.reactives.append(codes.get_code(
-                src_dir=self.src_dir, out_dir=self.out_dir, **generator))
+                src_dir=self.src_dir, out_dir=self.out_dir, **reactive))
 
         if 'test_merger' in config:
             if config['test_merger']['kind'] == 'icpc':
