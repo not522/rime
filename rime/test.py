@@ -45,10 +45,7 @@ class TestCase(object):
             self.difffile = os.path.splitext(infile)[0] + consts.DIFF_EXT
         else:
             self.difffile = difffile
-
-    @property
-    def timeout(self):
-        return self.testset.problem.timeout
+        self.timeout = self.testset.problem.timeout
 
 
 class TestCaseResult(object):

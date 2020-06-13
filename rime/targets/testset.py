@@ -141,10 +141,7 @@ class MergedTestCase(test.TestCase):
             os.path.join(testset.out_dir,
                          '{0}{1}'.format(name, consts.IN_EXT)))
         self.input_pattern = input_pattern
-
-    @property
-    def timeout(self):
-        return None
+        self.timeout = None
 
 
 class SubtaskTestCase(test.TestCase):
@@ -155,10 +152,7 @@ class SubtaskTestCase(test.TestCase):
         self.name = name
         self.score = score
         self.input_patterns = input_patterns
-
-    @property
-    def timeout(self):
-        return None
+        self.timeout = None
 
 
 class CasenumReplaceConfig(object):
