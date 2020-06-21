@@ -66,82 +66,28 @@ class KUPCReactiveRunner(ReactiveRunner):
             redirect_error=True)  # !redirect_error
 
 
-consts.IN_ORIGINAL_EXT = '.in_orig'
-
-
 class TestMerger(object):
-    def __init__(self, output_replace=None):
-        self.output_replace = output_replace
+    def __init__(self, testset, ui, testcases, timeout, terminator=None,
+                 **kwargs):
+        self.testcases = []
+        for testcase in testcases:
+            self.testcases.append(testcase)
+        self.timeout = timeout
+        self.terminator = terminator
 
-    def Run(self, testcases, merged_testcase, ui):
-        infiles = [os.path.splitext(t.infile)[0] + consts.IN_ORIGINAL_EXT
-                   for t in testcases]
-        difffiles = [os.path.splitext(infile)[0] + consts.DIFF_EXT
-                     for infile in infiles]
-        ui.console.PrintAction(
-            'MERGE', merged_testcase.testset,
-            'Generating %s' % os.path.basename(merged_testcase.infile),
-            progress=True)
-        self._ConcatenateIn(infiles, merged_testcase.infile)
-        ui.console.PrintAction(
-            'MERGE', merged_testcase.testset,
-            'Generating %s' % os.path.basename(merged_testcase.difffile),
-            progress=True)
-        self._ConcatenateDiff(difffiles, merged_testcase.difffile)
+        if self.terminator and not self.terminator.endswith('\n'):
+            raise RuntimeError('terminator is not ending with \\n.')
+        for key in kwargs:
+            ui.errors.Warning(
+                testset, 'Unknown argment, {}:{}'.format(key, kwargs[key]))
 
-    def _ConcatenateIn(self, srcs, dst):
-        raise NotImplementedError()
-
-    def _ConcatenateDiff(self, srcs, dst):
-        # avoid overwriting
-        if any([os.path.exists(src) and src != dst for src in srcs]):
-            with open(dst, 'w') as f:
-                for i, src in enumerate(srcs):
-                    if self.output_replace:
-                        f.write(self.output_replace(
-                            i + 1, files.ReadFile(src)))
-                    else:
-                        f.write(files.ReadFile(src))
-
-
-class ICPCMerger(TestMerger):
-    PREFIX = 'icpc'
-
-    def __init__(self, input_terminator, output_replace=None):
-        super(ICPCMerger, self).__init__(output_replace)
-        self.input_terminator = input_terminator
-        if self.input_terminator and not self.input_terminator.endswith('\n'):
-            raise RuntimeError(
-                'icpc_merger(): input_terminator is not ending with \\n.')
-
-    def _ConcatenateIn(self, srcs, dst):
+    def generate(self, name, inputs, out_dir):
+        dst = os.path.join(out_dir, name)
         with open(dst, 'w') as f:
-            for i, src in enumerate(srcs):
-                f.write(files.ReadFile(src))
-            f.write(self.input_terminator)
-
-
-class GCJMerger(TestMerger):
-    PREFIX = 'gcj'
-
-    def __init__(self, output_replace=None):
-        super(GCJMerger, self).__init__(output_replace)
-
-    def _ConcatenateIn(self, srcs, dst):
-        with open(dst, 'w') as f:
-            f.write(str(len(srcs)) + '\n')
-            for i, src in enumerate(srcs):
-                f.write(files.ReadFile(src))
-
-
-class MergedTestCase(test.TestCase):
-    def __init__(self, testset, name, input_pattern):
-        super(MergedTestCase, self).__init__(
-            testset,
-            os.path.join(testset.out_dir,
-                         '{0}{1}'.format(name, consts.IN_EXT)))
-        self.input_pattern = input_pattern
-        self.timeout = None
+            for input in inputs:
+                f.write(files.ReadFile(os.path.join(out_dir, input)))
+            if self.terminator:
+                f.write(self.terminator)
 
 
 class SubtaskTestCase(test.TestCase):
@@ -153,15 +99,6 @@ class SubtaskTestCase(test.TestCase):
         self.score = score
         self.input_patterns = input_patterns
         self.timeout = None
-
-
-class CasenumReplaceConfig(object):
-    def __init__(self, case_pattern, case_replace):
-        self.case_pattern = case_pattern
-        self.case_replace = case_replace
-
-    def __call__(self, i, src):
-        return src.replace(self.case_pattern, self.case_replace.format(i))
 
 
 class Testset(target.TargetBase, ProblemComponentMixin):
@@ -182,9 +119,6 @@ class Testset(target.TargetBase, ProblemComponentMixin):
 
         # self.exports['kupc_reactive_runner'] = KUPCReactiveRunner()
 
-        # self.exports['icpc_merger'] = ICPCMerger()
-        # self.exports['gcj_merger'] = GCJMerger()
-
         self.aoj_pack_dir = os.path.join(self.problem.out_dir, 'aoj')
         self.atcoder_pack_dir = os.path.join(self.problem.out_dir, 'atcoder')
         self.pack_dir = os.path.join(self.problem.out_dir, 'hacker_rank')
@@ -203,6 +137,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
         self.validators = []
         self.judges = []
         self.reactives = []
+        self.merger = None
 
         for generator in config['generator']:
             self.generators.append(codes.get_code(
@@ -220,27 +155,8 @@ class Testset(target.TargetBase, ProblemComponentMixin):
             self.reactives.append(codes.get_code(
                 src_dir=self.src_dir, out_dir=self.out_dir, **reactive))
 
-        if 'test_merger' in config:
-            if config['test_merger']['kind'] == 'icpc':
-                self.test_merger = ICPCMerger(**config['test_merger'])
-            elif config['test_merger']['kind'] == 'gcj':
-                self.test_merger = GCJMerger(**config['test_merger'])
-            else:
-                assert False, 'Unkown test merger'
-        else:
-            self.test_merger = None
-
-        if 'casenum_replace' in config:
-            self.casenum_replace = CasenumReplaceConfig(
-                **config['casenum_replace'])
-        else:
-            self.casenum_replace = None
-
-        self.merged_testcases = []
-        if 'merged_testset' in config:
-            for merged_testset in config['merged_testset']:
-                self.merged_testcases.append(
-                    MergedTestCase(self, **config['merged_testset']))
+        if 'merged_testcase' in config:
+            self.merger = TestMerger(self, ui, **config['merged_testcase'])
 
         self.subtask = []
         if 'subtask' in config:
@@ -266,20 +182,21 @@ class Testset(target.TargetBase, ProblemComponentMixin):
     def ListTestCases(self):
         """Enumerate test cases."""
         testcases = []
+
+        timeouts = {}
+        if self.merger:
+            for name, _ in self.merger.testcases:
+                timeouts[name] = self.merger.timeout
+
         for infile in files.ListDir(self.out_dir, False):
             infile = os.path.join(self.out_dir, infile)
             if not infile.endswith(consts.IN_EXT):
                 continue
             if not os.path.isfile(infile):
                 continue
-            testcases.append(test.TestCase(self, infile))
-        self._SortTestCases(testcases)
-
-        merged_infiles = set([t.infile for t in self.GetMergedTestCases()])
-        return [t for t in testcases if t.infile not in merged_infiles]
-
-    def GetMergedTestCases(self):
-        return self.merged_testcases
+            timeout = timeouts.get(infile, self.problem.timeout)
+            testcases.append(test.TestCase(infile, timeout))
+        return self._SortTestCases(testcases)
 
     def _SortTestCases(self, testcases):
         """Sorts test cases in a little bit smarter way."""
@@ -287,12 +204,13 @@ class Testset(target.TargetBase, ProblemComponentMixin):
             def replace_digits(match):
                 return '%08s' % match.group(0)
             return re.sub(r'\d+', replace_digits, s.infile)
-        testcases.sort(key=tokenize)
+        return sorted(testcases, key=tokenize)
 
     def build(self, ui):
         """Build testset."""
         if self.IsBuildCached():
-            if not self.ListTestCases():
+            self.testcases = self.ListTestCases()
+            if not self.testcases:
                 ui.errors.Warning(self, 'No test case found')
             return True
         if not self._init_output_dir(ui):
@@ -307,16 +225,15 @@ class Testset(target.TargetBase, ProblemComponentMixin):
             return False
         if not self._run_generators(ui):
             return False
-        if not self._run_validators(ui):
-            return False
-        if not self.ListTestCases():
+        self.testcases = self.ListTestCases()
+        if not self.testcases:
             ui.errors.Warning(self, 'No test case found')
         else:
             if not self._compile_reference_solution(ui):
                 return False
             if not self._run_reference_solution(ui):
                 return False
-        if not self._post_build_hook(ui):
+        if not self._run_validators(ui):
             return False
         if not self.SetCacheStamp(ui):
             return False
@@ -360,12 +277,16 @@ class Testset(target.TargetBase, ProblemComponentMixin):
         if not all(results):
             return False
 
-        if self.test_merger:
-            for testcase in self.ListTestCases():
-                src = testcase.infile
-                dst = os.path.splitext(src)[0] + consts.IN_ORIGINAL_EXT
-                files.CopyFile(src, dst)
-                self.test_merger.Run([testcase], testcase, ui)
+        testcases = self.ListTestCases()
+        if self.merger:
+            for name, patterns in self.merger.testcases:
+                inputs = []
+                for testcase in testcases:
+                    for pattern in patterns:
+                        if fnmatch.fnmatch(testcase.infile, pattern):
+                            inputs.append(testcase)
+                            break
+                self.merger.generate(name, inputs, self.out_dir)
 
         return True
 
@@ -389,11 +310,10 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                 ui.errors.Warning(self, 'Validator unavailable')
             return True
 
-        testcases = self.ListTestCases()
         invalidcases = self.ListInvalidTestCases()
         results = []
         for validator in self.validators:
-            for testcase in testcases:
+            for testcase in self.testcases:
                 results.append(self._run_validator_one(
                     validator, testcase, ui))
             for invalidcase in invalidcases:
@@ -447,7 +367,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
         if reference_solution is None:
             ui.errors.Error(self, 'Reference solution unavailable')
             return False
-        testcases = self.ListTestCases()
+        testcases = self.testcases
         results = []
         for testcase in testcases:
             results.append(self._run_reference_solution_one(
@@ -490,49 +410,6 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                                progress=True)
         return True
 
-    def _post_build_hook(self, ui):
-        results = []
-        for testcase in self.GetMergedTestCases():
-            results.append(self._generate_merged_test(testcase, ui))
-        if not all(results):
-            return False
-
-        results = []
-        for testcase in self.GetMergedTestCases():
-            results.append(self._validate_merged_test(testcase, ui))
-        if not all(results):
-            return False
-
-        return True
-
-    def _generate_merged_test(self, merged_testcase, ui):
-        if not self.test_merger:
-            ui.errors.Error(self, "No merger registered!")
-            return False
-
-        testcases = [t for t in self.ListTestCases()
-                     if fnmatch.fnmatch(os.path.basename(t.infile),
-                                        merged_testcase.input_pattern)]
-        self.test_merger.Run(testcases, merged_testcase, ui)
-        return True
-
-    def _validate_merged_test(self, merged_testcase, ui):
-        if not self.validators:
-            if self.base_dir:
-                ui.errors.Warning(self, 'Validator unavailable')
-            return True
-        testcases = self.GetMergedTestCases()
-        results = []
-        for validator in self.validators:
-            for testcase in testcases:
-                results.append(self._run_validator_one(
-                    validator, testcase, ui))
-
-        if not all(results):
-            return False
-        ui.console.PrintAction('VALIDATE', self, 'OK Merged Cases')
-        return True
-
     def test(self, ui):
         """Run tests in the testset."""
         results = []
@@ -569,7 +446,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
 
     def _test_solution_with_challenge_cases(self, solution, ui):
         """Test a wrong solution which has specified challenge cases."""
-        all_testcases = self.ListTestCases()
+        all_testcases = self.testcases
         challenge_infiles = solution.challenge_cases
         testcases = []
         for infile in challenge_infiles:
@@ -635,7 +512,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
 
         The solution can be marked as wrong but without challenge cases.
         """
-        testcases = self.ListTestCases()
+        testcases = self.testcases
         result = test.TestsetResult(self, solution, testcases)
         # Try all cases.
         for testcase in testcases:
@@ -651,32 +528,6 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                 ui.errors.Error(solution, result.detail)
 
         original_result = result
-        if (original_result.expected and
-                solution.IsCorrect() and
-                self.merged_testcases):
-            merged_result = self._test_solution_with_merged_tests(solution, ui)
-            original_result.results.update(merged_result.results)
-            if not merged_result.expected:
-                original_result.Finalize(
-                    False, detail=merged_result.detail,
-                    notable_testcase=merged_result.notable_testcase,
-                    allow_override=True)
-            else:
-                if merged_result.IsTimingValid(ui):
-                    detail = ('%s, %s' %
-                              (original_result.detail,
-                               ', '.join(['%s %.2fs' %
-                                          (os.path.basename(t.infile),
-                                           merged_result.results[t].time)
-                                          for t in merged_result.testcases])))
-                else:
-                    detail = ('%s, %s' %
-                              (original_result.detail,
-                               ', '.join(['%s *.**s' %
-                                          os.path.basename(t.infile)
-                                          for t in merged_result.testcases])))
-                original_result.Finalize(
-                    True, detail=detail, allow_override=True)
 
         if self.subtask:
             max_score = 0
@@ -716,8 +567,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                 else:
                     original_result.Finalize(
                         False,
-                        notable_testcase=test.TestCase(
-                            self, 'unexpected_score.in'),
+                        notable_testcase=test.TestCase('unexpected_score.in'),
                         detail=detail, allow_override=True)
                     if min_score == max_score:
                         ui.errors.Error(self,
@@ -762,15 +612,14 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                             '"%s"' % (judge_detail))
                         original_result.Finalize(
                             False,
-                            notable_testcase=test.TestCase(
-                                self, 'judge_error.in'),
+                            notable_testcase=test.TestCase('judge_error.in'),
                             detail=original_result.detail, allow_override=True)
                         return original_result
                 else:
                     ui.errors.Error(self, 'the judge is silent.')
                     original_result.Finalize(
                         False,
-                        notable_testcase=test.TestCase(self, 'judge_error.in'),
+                        notable_testcase=test.TestCase('judge_error.in'),
                         detail=original_result.detail, allow_override=True)
                     return original_result
             score /= float(len(original_result.results))
@@ -783,8 +632,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
             else:
                 original_result.Finalize(
                     False,
-                    notable_testcase=test.TestCase(
-                        self, 'unexpected_score.in'),
+                    notable_testcase=test.TestCase('unexpected_score.in'),
                     detail=detail, allow_override=True)
                 ui.errors.Error(self,
                                 'expected score %d does not equal to %s' %
@@ -857,19 +705,6 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                                    testcase.infile),
                                progress=True)
         return True
-
-    def _test_solution_with_merged_tests(self, solution, ui):
-        testcases = self.GetMergedTestCases()
-        result = test.TestsetResult(self, solution, testcases)
-        # Try all cases.
-        for testcase in testcases:
-            result = self._test_solution_with_all_cases_one(
-                solution, testcase, result, ui)
-            if not result and not ui.options['keep_going']:
-                break
-        if not result.IsFinalized():
-            result.Finalize(True, 'okay')
-        return result
 
     def _test_one_case(self, solution, testcase, ui):
         """Test a solution with one case.
@@ -991,7 +826,7 @@ class Testset(target.TargetBase, ProblemComponentMixin):
                 continue
             if not os.path.isfile(infile):
                 continue
-            testcases.append(test.TestCase(self, infile))
+            testcases.append(test.TestCase(infile))
         self._SortTestCases(testcases)
         return testcases
 

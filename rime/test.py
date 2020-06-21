@@ -37,15 +37,10 @@ class Verdicts(object):
 
 
 class TestCase(object):
-
-    def __init__(self, testset, infile, difffile=None):
-        self.testset = testset
+    def __init__(self, infile, timeout=None):
         self.infile = infile
-        if difffile is None:
-            self.difffile = os.path.splitext(infile)[0] + consts.DIFF_EXT
-        else:
-            self.difffile = difffile
-        self.timeout = self.testset.problem.timeout
+        self.timeout = timeout
+        self.difffile = os.path.splitext(infile)[0] + consts.DIFF_EXT
 
 
 class TestCaseResult(object):
